@@ -6,6 +6,7 @@ from .preprocessors.uploadimagepreprocessor import UploadImagePreprocessor
 from .estimators.objectdetector import ObjectDetector as Estimator
 import api.global_variables as variaveis
 import time
+from fastapi import HTTPException
 
 router = APIRouter()
 
@@ -26,7 +27,7 @@ async def post(images_file: UploadFile = File(...)):
     if image is not None and not type(image) == str:
         return StreamingResponse(io.BytesIO(image), media_type="image/png")
     else:
-        return "no_license_plate"
+        raise HTTPException(status_code=406, detail="Nenhum objeto detectado na imagem.")
 
 
 @router.post("/vis_objects", status_code=200)
