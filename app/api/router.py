@@ -38,7 +38,7 @@ async def post(images_file: UploadFile = File(...)):
 async def execute(image_file, output):
     image = await UploadImagePreprocessor.read_imagefile(image_file)
 
-    estimator = Estimator(model=variaveis.model_warmed, infos=variaveis.info_uteis)
+    estimator = Estimator(model=variaveis.model, infos=variaveis.info_uteis)
 
     print('Predicting... ', end='')
     start_time = time.time()
