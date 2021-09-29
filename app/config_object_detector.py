@@ -8,7 +8,7 @@ from api import router
 USE_GPU = True
 
 # path para o diretório dos modelos
-MODELS_PATH = 'api/models'
+MODELS_PATH = os.path.sep.join(['api', 'models'])
 MODEL = os.path.sep.join([MODELS_PATH, 'centernet_resnet50_v1', 'saved_model'])
 
 # define o tipo do modelo
