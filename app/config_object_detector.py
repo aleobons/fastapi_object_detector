@@ -1,7 +1,7 @@
 import os
 from utils.load_model import LoadModel
 from api.estimators.objectdetector import ObjectDetector
-import json
+import utils.read_label_map as read_label_map
 
 # define se vai usar GPU ou não
 USE_GPU = True
@@ -18,7 +18,7 @@ FILES_PATH = 'files'
 
 # define os paths para informações úteis para a API
 INFO_UTEIS = {
-    ObjectDetector.INFO_LABEL_MAP: json.loads(open('files/label_map.json').read()),
+    ObjectDetector.INFO_LABEL_MAP: read_label_map.read_label_map('files/label_map.pbtxt'),
 }
 
 OUTPUTS = {
