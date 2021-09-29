@@ -24,10 +24,10 @@ class ObjectDetector:
 
         self.label_map = infos.get(self.INFO_LABEL_MAP, None)
 
-        self.confidence_threshold = 0.5
-        self.non_maximum_suppression_threshold = 0.5
-        self.max_objects = 1
-        self.show_confidence = False
+        self.confidence_threshold = None
+        self.non_maximum_suppression_threshold = None
+        self.max_objects = None
+        self.show_confidence = None
 
         self.image_original = None
 
