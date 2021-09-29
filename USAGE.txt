@@ -1,1 +1,3 @@
 uvicorn main:app --reload
+ou
+uvicorn main:app
