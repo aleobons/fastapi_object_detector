@@ -8,7 +8,7 @@ git clone https://github.com/aleobons/fastapi_object_detector.git
 
 pip install -r requirements.txt
 
-** deve estar no diretório onde o arquivo requirements.txt está salvo
+** rode no diretório onde o arquivo requirements.txt está salvo
 
 3 - Teste a API:
 
