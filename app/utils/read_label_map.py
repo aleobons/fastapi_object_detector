@@ -12,11 +12,11 @@ def read_label_map(label_map_path):
                 pass
             elif "id" in line:
                 item_id = int(line.split(":", 1)[1].strip())
-            elif "name" in line:
-                item_name = line.split(":", 1)[1].replace("'", "").strip()
+            elif "display_name" in line:
+                item_name = line.split(":", 1)[1].replace("\"", "").strip()
 
             if item_id is not None and item_name is not None:
-                items[item_name] = item_id
+                items[item_id] = item_name
                 item_id = None
                 item_name = None
 

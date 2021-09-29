@@ -103,17 +103,17 @@ class ObjectDetector:
         image_with_objects = self.image_original.copy()
 
         for info in result_info:
-            class_id = f"{info[2]}"
-            label_class = self.label_map.get(class_id, class_id).get('name', class_id)
+            class_id = info[2]
+            label_class = self.label_map.get(class_id, class_id)
 
             boxes = self._calcule_coord(list(info[0]))
             image_with_objects = cv2.rectangle(image_with_objects, (boxes[1], boxes[0]),
                                                (boxes[3], boxes[2]), (255, 0, 0), 2)
 
             if self.show_confidence:
-                text = "{}-{:.2f}%".format(label_class, info[1] * 100)
+                text = f"{label_class}-{info[1] * 100:.2f}%"
             else:
-                text = "{}".format(label_class)
+                text = f"{label_class}"
 
             cv2.putText(image_with_objects, text, (boxes[1], boxes[0] - 15),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 0, 0), 2)
