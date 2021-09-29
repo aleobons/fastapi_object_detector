@@ -125,13 +125,13 @@ class ObjectDetector:
     def _build_output_boxes(self, result_info):
         output = []
         for info in result_info:
-            class_id = f"{info[2]}"
+            class_id = info[2]
             boxes = self._calcule_coord(list(info[0]))
 
             object_detected = {
                 "detection_box": f"{boxes}",  # formato: [y1, x1, y2, x2]
-                "detection_score": f"{info[1]}",
-                "detection_class": self.label_map.get(class_id, class_id).get('name', class_id)
+                "detection_score": f"{info[1]:.4f}",
+                "detection_class": f"{self.label_map.get(class_id, class_id)}"
             }
 
             output.append(object_detected)
