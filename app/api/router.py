@@ -10,7 +10,7 @@ import time
 router = APIRouter()
 
 
-@router.post("/coordenadas", status_code=201)
+@router.post("/coordenadas", status_code=200)
 async def post(images_file: List[UploadFile] = File(...)):
     coordenadas = []
     for image_file in images_file:
@@ -19,7 +19,7 @@ async def post(images_file: List[UploadFile] = File(...)):
     return coordenadas
 
 
-@router.post("/crop", status_code=201)
+@router.post("/crop", status_code=200)
 async def post(images_file: UploadFile = File(...)):
     image = await execute(images_file, output=variaveis.outputs.get('1', {}))
 
@@ -29,7 +29,7 @@ async def post(images_file: UploadFile = File(...)):
         return "no_license_plate"
 
 
-@router.post("/vis_objects", status_code=201)
+@router.post("/vis_objects", status_code=200)
 async def post(images_file: UploadFile = File(...)):
     image = await execute(images_file, output=variaveis.outputs.get('2', {}))
     return StreamingResponse(io.BytesIO(image), media_type="image/png")
