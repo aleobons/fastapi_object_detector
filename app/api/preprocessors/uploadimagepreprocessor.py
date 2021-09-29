@@ -1,4 +1,5 @@
 from PIL import Image
+from PIL import UnidentifiedImageError
 from io import BytesIO
 from tensorflow.keras.preprocessing.image import img_to_array
 from fastapi import HTTPException
@@ -14,7 +15,10 @@ class UploadImagePreprocessor:
             raise HTTPException(status_code=415, detail="Unsupported file provided.")
 
         file = await upload_file.read()
-        imagem = Image.open(BytesIO(file))
-        imagem = img_to_array(imagem, dtype='uint8')
+        try:
+            imagem = Image.open(BytesIO(file))
+            imagem = img_to_array(imagem, dtype='uint8')
+        except UnidentifiedImageError:
+            raise HTTPException(status_code=415, detail="Invalid file.")
 
         return imagem
