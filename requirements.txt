@@ -5,3 +5,4 @@ tensorflow-gpu~=2.5.0
 uvicorn~=0.14.0
 python-multipart~=0.0.5
 opencv-python~=4.5.2.54
+pillow~=8.3.2

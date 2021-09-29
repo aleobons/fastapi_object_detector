@@ -1,28 +1,20 @@
-import numpy as np
-import cv2
+from PIL import Image
+from io import BytesIO
+from tensorflow.keras.preprocessing.image import img_to_array
+from fastapi import HTTPException
 
 
 class UploadImagePreprocessor:
 
     @staticmethod
     async def read_imagefile(upload_file):
-        imagem = None
-
-        extension_image = upload_file.filename.split(".")[-1] in ("jpg", "jpeg", "png")
+        extension_image = upload_file.filename.split(".")[-1].lower() in ("jpg", "jpeg", "png")
 
         if not extension_image:
-            return "Image must be jpg or png format!"
+            raise HTTPException(status_code=415, detail="Unsupported file provided.")
 
         file = await upload_file.read()
-        np_file = np.fromstring(file, np.uint8)
+        imagem = Image.open(BytesIO(file))
+        imagem = img_to_array(imagem, dtype='uint8')
 
-        try:
-            imagem = cv2.cvtColor(cv2.imdecode(np_file, cv2.IMREAD_COLOR), cv2.COLOR_BGR2RGB)
-
-        except Exception as e:
-            print(e)
-        finally:
-            if imagem is None:
-                return "Invalid image"
-
-            return imagem
+        return imagem
