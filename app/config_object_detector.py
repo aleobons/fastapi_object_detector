@@ -2,13 +2,14 @@ import os
 from utils.load_model import LoadModel
 from api.estimators.objectdetector import ObjectDetector
 import utils.read_label_map as read_label_map
+from api import router
 
 # define se vai usar GPU ou não
 USE_GPU = True
 
 # path para o diretório dos modelos
 MODELS_PATH = 'api/models'
-MODEL = os.path.sep.join([MODELS_PATH, 'efficientdet_d0', 'v3', 'saved_model'])
+MODEL = os.path.sep.join([MODELS_PATH, 'centernet_resnet50_v1', 'saved_model'])
 
 # define o tipo do modelo
 TYPE_MODEL = LoadModel.MODEL_TENSORFLOW
@@ -47,15 +48,19 @@ OUTPUTS = {
 }
 
 # define o nome da API
-NAME_API = 'Detector de placa'
+NAME_API = 'Detector de objetos'
 
 # define a descrição da API
-DESCRIPTION_API = 'Serviço de detecção de placas em imagens do Alerta Brasil'
+DESCRIPTION_API = 'Serviço de detecção de objetos utilizando uma rede treinada no Coco dataset'
 
 # define a versão da API
 VERSION_API = '0.1'
 
 # define as chamadas da API e as tags
 CHAMADAS_API = {
-    '/detect_placa': 'detect_placa'
+    'OBJECTS': {
+        'prefix': '/detect_object',
+        'tag': 'detect_object',
+        'router': router.router
+    }
 }

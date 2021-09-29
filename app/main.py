@@ -4,7 +4,6 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 from fastapi import FastAPI
 import api.global_variables as global_vars
 import config_object_detector as config
-from api import router
 import tensorflow as tf
 from utils.load_model import LoadModel
 
@@ -24,8 +23,8 @@ else:
 app = FastAPI(title=config.NAME_API, description=config.DESCRIPTION_API, version=config.VERSION_API)
 
 # define as chamadas da API
-for prefix, tag in config.CHAMADAS_API.items():
-    app.include_router(router.router, prefix=prefix, tags=[tag])
+for key_call, call in config.CHAMADAS_API.items():
+    app.include_router(call['router'], prefix=call['prefix'], tags=['tag'])
 
 # carrega o modelo que será utilizado na API
 global_vars.model = LoadModel(config.MODEL, config.TYPE_MODEL).carrega_modelo()
