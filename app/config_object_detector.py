@@ -1,3 +1,8 @@
+''' Arquivo de configuração
+
+Define diversos parâmetros evitando alterar os códigos principais
+'''
+
 import os
 from utils.load_model import LoadModel
 from api.estimators.objectdetector import ObjectDetector
@@ -9,19 +14,22 @@ USE_GPU = True
 
 # path para o diretório dos modelos
 MODELS_PATH = os.path.sep.join(['api', 'models'])
+
+# modelo treinado que será utilizado
 MODEL = os.path.sep.join([MODELS_PATH, 'centernet_resnet50_v1', 'saved_model'])
 
-# define o tipo do modelo
-TYPE_MODEL = LoadModel.MODEL_TENSORFLOW
+# define a forma que o modelo será carregado (diretamente pelo TENSORFLOW ou pelo KERAS)
+TYPE_MODEL = LoadModel.TypeModel.MODEL_TENSORFLOW
 
-# path para arquivos diversos
+# path para os arquivos diversos
 FILES_PATH = 'files'
 
-# define os paths para informações úteis para a API
+# define as informações úteis para a API
 INFO_UTEIS = {
     ObjectDetector.INFO_LABEL_MAP: read_label_map.read_label_map('files/label_map.pbtxt'),
 }
 
+# define os outputs e os seus respectivos parâmetros
 OUTPUTS = {
     '0': {
         'name': ObjectDetector.OUTPUT_BOXES,

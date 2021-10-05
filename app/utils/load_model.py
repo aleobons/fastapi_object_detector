@@ -1,14 +1,29 @@
 import tensorflow as tf
+from enum import Enum
 
 
 class LoadModel:
-    MODEL_KERAS = 'KERAS'
-    MODEL_TENSORFLOW = 'TENSORFLOW'
+    ''' Classe para carregar o modelo
 
-    def __init__(self, model_path, type_model):
+    Carrega tanto modelo KERAS como qualquer modelo Tensorflow
+
+    Attributes:
+        MODEL_KERAS: constante que define o carregamento de um modelo KERAS
+        MODEL_TENSORFLOW: constante que define o carregamento de um modelo TENSORFLOW
+        type_models: dicionário que define qual função utilizar para cada tipo de modelo
+        type_model: string
+        model_path
+
+    '''
+
+    class TypeModel(Enum):
+        MODEL_KERAS = 'KERAS'
+        MODEL_TENSORFLOW = 'TENSORFLOW'
+
+    def __init__(self, model_path: str, type_model: TypeModel):
         self.type_models = {
-            LoadModel.MODEL_KERAS: self._load_model_keras,
-            LoadModel.MODEL_TENSORFLOW: self._load_model_tensorflow
+            LoadModel.TypeModel.MODEL_KERAS: self._load_model_keras,
+            LoadModel.TypeModel.MODEL_TENSORFLOW: self._load_model_tensorflow
         }
         self.type_model = type_model
         self.model_path = model_path
