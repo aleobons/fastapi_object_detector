@@ -1,3 +1,10 @@
+'''Funções do router
+
+Funções utilizadas para mapear o roteamento da chamada principal da API
+
+Um roteamento para cada output do detector de objetos
+'''
+
 from fastapi import APIRouter, UploadFile, File
 import io
 from starlette.responses import StreamingResponse
@@ -24,10 +31,10 @@ async def post(images_file: List[UploadFile] = File(...)):
 async def post(images_file: UploadFile = File(...)):
     image = await execute(images_file, output=variaveis.outputs.get('1', {}))
 
-    if image is not None and not type(image) == str:
-        return StreamingResponse(io.BytesIO(image), media_type="image/png")
-    else:
+    if image is None:
         raise HTTPException(status_code=406, detail="Nenhum objeto detectado na imagem.")
+
+    return StreamingResponse(io.BytesIO(image), media_type="image/png")
 
 
 @router.post("/vis_objects", status_code=200)

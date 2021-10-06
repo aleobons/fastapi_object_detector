@@ -8,11 +8,10 @@ class LoadModel:
     Carrega tanto modelo KERAS como qualquer modelo Tensorflow
 
     Attributes:
-        MODEL_KERAS: constante que define o carregamento de um modelo KERAS
-        MODEL_TENSORFLOW: constante que define o carregamento de um modelo TENSORFLOW
+        TypeModel (Enum): constantes que definem a forma de carregamento do modelo
         type_models: dicionário que define qual função utilizar para cada tipo de modelo
-        type_model: string
-        model_path
+        type_model: tipo do modelo a ser carregado
+        model_path: local onde o modelo está salvo
 
     '''
 
@@ -29,7 +28,7 @@ class LoadModel:
         self.model_path = model_path
 
     def carrega_modelo(self):
-        return self.type_models.get(self.type_model)()
+        return self.type_models.get(self.type_model)() # chama a função correspondente ao tipo do modelo
 
     def _load_model_keras(self):
         return tf.keras.models.load_model(self.model_path)
