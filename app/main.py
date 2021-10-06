@@ -25,7 +25,7 @@ else:
 # carrega a API
 app = FastAPI(title=config.NAME_API, description=config.DESCRIPTION_API, version=config.VERSION_API)
 
-# define as chamadas da API
+# define os endpoints da API
 for key_call, call in config.CHAMADAS_API.items():
     app.include_router(call['router'], prefix=call['prefix'], tags=['tag'])
 

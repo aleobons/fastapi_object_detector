@@ -26,31 +26,31 @@ FILES_PATH = 'files'
 
 # define as informações úteis para a API
 INFO_UTEIS = {
-    ObjectDetector.INFO_LABEL_MAP: read_label_map.read_label_map('files/label_map.pbtxt'),
+    ObjectDetector.Infos.INFO_LABEL_MAP: read_label_map.read_label_map('files/label_map.pbtxt'),
 }
 
 # define os outputs e os seus respectivos parâmetros
 OUTPUTS = {
     '0': {
-        'name': ObjectDetector.OUTPUT_BOXES,
+        'name': ObjectDetector.Output.OUTPUT_BOXES,
         'vars': {
-            ObjectDetector.INFO_MAX_OBJECTS: 1,
-            ObjectDetector.INFO_CONFIDENCE_THRESHOLD: 0.4
+            ObjectDetector.Infos.INFO_MAX_OBJECTS: 1,
+            ObjectDetector.Infos.INFO_CONFIDENCE_THRESHOLD: 0.4
         }
     },
     '1': {
-        'name': ObjectDetector.OUTPUT_CROPS,
+        'name': ObjectDetector.Output.OUTPUT_CROPS,
         'vars': {
-            ObjectDetector.INFO_MAX_OBJECTS: 1,
-            ObjectDetector.INFO_CONFIDENCE_THRESHOLD: 0.4
+            ObjectDetector.Infos.INFO_MAX_OBJECTS: 1,
+            ObjectDetector.Infos.INFO_CONFIDENCE_THRESHOLD: 0.4
         }
     },
     '2': {
-        'name': ObjectDetector.OUTPUT_VIS_OBJECTS,
+        'name': ObjectDetector.Output.OUTPUT_VIS_OBJECTS,
         'vars': {
-            ObjectDetector.INFO_MAX_OBJECTS: 1,
-            ObjectDetector.INFO_CONFIDENCE_THRESHOLD: 0.4,
-            ObjectDetector.INFO_SHOW_CONFIDENCE: True
+            ObjectDetector.Infos.INFO_MAX_OBJECTS: 1,
+            ObjectDetector.Infos.INFO_CONFIDENCE_THRESHOLD: 0.4,
+            ObjectDetector.Infos.INFO_SHOW_CONFIDENCE: True
         }
     }
 }
@@ -64,7 +64,7 @@ DESCRIPTION_API = 'Serviço de detecção de objetos utilizando uma rede treinad
 # define a versão da API
 VERSION_API = '0.1'
 
-# define as chamadas da API e as tags
+# define os endpoints da API e as tags
 CHAMADAS_API = {
     'OBJECTS': {
         'prefix': '/detect_object',

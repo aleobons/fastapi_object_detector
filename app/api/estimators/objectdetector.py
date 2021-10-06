@@ -1,28 +1,32 @@
 import tensorflow as tf
 import numpy as np
 import cv2
+from enum import Enum
 
 
 class ObjectDetector:
-    OUTPUT_BOXES = 'OUTPUT_BOXES'
-    OUTPUT_CROPS = 'OUTPUT_CROPS'
-    OUTPUT_VIS_OBJECTS = 'OUTPUT_VIS_OBJECTS'
-    INFO_CONFIDENCE_THRESHOLD = 'confidence_threshold'
-    INFO_MAX_OBJECTS = 'max_objects'
-    INFO_NMS_THRESHOLD = 'non_maximum_suppression_threshold'
-    INFO_LABEL_MAP = 'label_map'
-    INFO_SHOW_CONFIDENCE = 'show_confidence'
+    class Output(Enum):
+        OUTPUT_BOXES = 'OUTPUT_BOXES'
+        OUTPUT_CROPS = 'OUTPUT_CROPS'
+        OUTPUT_VIS_OBJECTS = 'OUTPUT_VIS_OBJECTS'
+
+    class Infos(Enum):
+        INFO_CONFIDENCE_THRESHOLD = 'confidence_threshold'
+        INFO_MAX_OBJECTS = 'max_objects'
+        INFO_NMS_THRESHOLD = 'non_maximum_suppression_threshold'
+        INFO_LABEL_MAP = 'label_map'
+        INFO_SHOW_CONFIDENCE = 'show_confidence'
 
     def __init__(self, model, infos=None):
         self.outputs_functions = {
-            self.OUTPUT_BOXES: self._build_output_boxes,
-            self.OUTPUT_CROPS: self._build_output_crops,
-            self.OUTPUT_VIS_OBJECTS: self._build_output_vis
+            self.Output.OUTPUT_BOXES: self._build_output_boxes,
+            self.Output.OUTPUT_CROPS: self._build_output_crops,
+            self.Output.OUTPUT_VIS_OBJECTS: self._build_output_vis
         }
 
         self.model = model
 
-        self.label_map = infos.get(self.INFO_LABEL_MAP, None)
+        self.label_map = infos.get(self.Infos.INFO_LABEL_MAP, None)
 
         self.confidence_threshold = None
         self.non_maximum_suppression_threshold = None
@@ -36,12 +40,12 @@ class ObjectDetector:
         self.image_original = image
 
         # guarda as informações do output
-        output_function = self.outputs_functions.get(output.get('name', self.OUTPUT_BOXES))
+        output_function = self.outputs_functions.get(output.get('name', self.Output.OUTPUT_BOXES))
         vars_output = output.get('vars', {})
-        self.confidence_threshold = vars_output.get(self.INFO_CONFIDENCE_THRESHOLD, 0.5)
-        self.non_maximum_suppression_threshold = vars_output.get(self.INFO_NMS_THRESHOLD, 0.5)
-        self.max_objects = vars_output.get(self.INFO_MAX_OBJECTS, 1)
-        self.show_confidence = vars_output.get(self.INFO_SHOW_CONFIDENCE, False)
+        self.confidence_threshold = vars_output.get(self.Infos.INFO_CONFIDENCE_THRESHOLD, 0.5)
+        self.non_maximum_suppression_threshold = vars_output.get(self.Infos.INFO_NMS_THRESHOLD, 0.5)
+        self.max_objects = vars_output.get(self.Infos.INFO_MAX_OBJECTS, 1)
+        self.show_confidence = vars_output.get(self.Infos.INFO_SHOW_CONFIDENCE, False)
 
         # Converte o np array em um tensor e adiciona um axis ao tensor pois o modelo espera um batch de imagens
         input_tensor = tf.convert_to_tensor(image)
