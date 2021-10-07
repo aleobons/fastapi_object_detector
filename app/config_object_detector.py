@@ -34,7 +34,7 @@ OUTPUTS = {
     '0': {
         'name': ObjectDetector.Output.OUTPUT_BOXES,
         'vars': {
-            ObjectDetector.Infos.INFO_MAX_OBJECTS: 1,
+            ObjectDetector.Infos.INFO_MAX_OBJECTS: 5,
             ObjectDetector.Infos.INFO_CONFIDENCE_THRESHOLD: 0.4
         }
     },
@@ -48,7 +48,7 @@ OUTPUTS = {
     '2': {
         'name': ObjectDetector.Output.OUTPUT_VIS_OBJECTS,
         'vars': {
-            ObjectDetector.Infos.INFO_MAX_OBJECTS: 1,
+            ObjectDetector.Infos.INFO_MAX_OBJECTS: 5,
             ObjectDetector.Infos.INFO_CONFIDENCE_THRESHOLD: 0.4,
             ObjectDetector.Infos.INFO_SHOW_CONFIDENCE: True
         }

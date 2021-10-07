@@ -3,17 +3,17 @@ from enum import Enum
 
 
 class LoadModel:
-    ''' Classe para carregar o modelo
+    """ Classe para carregar o modelo
 
     Carrega tanto modelo KERAS como qualquer modelo Tensorflow
 
     Attributes:
-        TypeModel (Enum): constantes que definem a forma de carregamento do modelo
+        TypeModel(Enum): constantes que definem a forma de carregamento do modelo
         type_models: dicionário que define qual função utilizar para cada tipo de modelo
         type_model: tipo do modelo a ser carregado
         model_path: local onde o modelo está salvo
 
-    '''
+    """
 
     class TypeModel(Enum):
         MODEL_KERAS = 'KERAS'
