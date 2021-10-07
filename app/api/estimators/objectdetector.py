@@ -106,24 +106,11 @@ class ObjectDetector:
             filtered_current_array = current_array[scores > confidence_threshold]
             detections[key] = filtered_current_array
 
-        # criando um objeto zip que conterá as informações das detecções agrupadas em tuplas
-        # output_info = list(zip(detections['detection_boxes'],
-        #                        detections['detection_scores'],
-        #                        detections['detection_classes']
-        #                        )
-        #                    )
         # retira as detecções que se sobrescrevem conforme o treshold definido
-        # boxes, scores, classes = self._nms(output_info, non_maximum_suppression_threshold)
-        # print(detections['detection_scores'])
-        # print(detections['detection_classes'])
         boxes, scores, classes = self._nms(detections['detection_boxes'], detections['detection_scores'],
                                            detections['detection_classes'], non_maximum_suppression_threshold)
 
-        # print(scores)
-        # print(classes)
-
-
-        # agrupa novamente as detecções e ordena pelos de maior confiança
+        # agrupa as informações das detecções e ordena pelos de maior confiança
         result_info = list(zip(boxes, scores, classes))
         result_info.sort(key=lambda x: x[1], reverse=True)
 
@@ -256,100 +243,29 @@ class ObjectDetector:
 
         return [ymin, xmin, ymax, xmax]
 
-    def _nms(self, boxes, scores, classes, iou_threshold=0.5):
-        selected_indices = tf.image.non_max_suppression(
-            boxes, scores, max_output_size=len(boxes), iou_threshold=iou_threshold,
-            score_threshold=float('-inf'), name=None
-        )
+    @staticmethod
+    def _nms(boxes, scores, classes, iou_threshold=0.5):
+        """
 
+        Args:
+            boxes: lista de coordenadas
+            scores: lista de confianças
+            classes: lista de rótulos
+            iou_threshold: limite para supressão de detecções com sobreposição. Quanto maior, mais sobreposição pode
+            ocorrer
+
+        Returns:
+            Uma tupla com as coordenadas, confianças e rótulos selecionados após a supressão das sobreposições
+        """
+
+        # Utilizo a função do Tensorflow para selecionar os índices que serão mantidos
+        selected_indices = tf.image.non_max_suppression(
+            boxes, scores, max_output_size=len(boxes), iou_threshold=iou_threshold)
+
+        # coleto as coordenadas, confianças e rótulos que serão mantidos
         selected_boxes = tf.gather(boxes, selected_indices)
         selected_scores = tf.gather(scores, selected_indices)
         selected_classes = tf.gather(classes, selected_indices)
 
+        # converto em numpy array antes de retornar para evitar erros na construção dos outputs
         return selected_boxes.numpy(), selected_scores.numpy(), selected_classes.numpy()
-
-    # def _nms(self, rects, non_maximum_suppression_threshold=0.5):
-    #     """ Filtra detecções com sobreposições
-    #
-    #     O filtro é realizado conforme o non_maximum_suppression_threshold
-    #
-    #     Args:
-    #         rects: uma lista de detecções com as coordenadas dos retângulos, confianças e rótulos
-    #         non_maximum_suppression_threshold: limite para filtrar uma sobreposição de retângulos
-    #
-    #     Returns:
-    #         Uma tupla com as coordenadas, confianças e rótulos
-    #     """
-    #
-    #     # inicializa a lista de detecções filtradas
-    #     out = []
-    #
-    #     # inicializa uma lista de decisões para remoção da detecção
-    #     remove = [False] * len(rects)
-    #
-    #     # percorre todas as detecções
-    #     for i in range(0, len(rects) - 1):
-    #
-    #         # se a detecção já foi marcada para ser removida, pula ela
-    #         if remove[i]:
-    #             continue
-    #
-    #         # inicializa uma lista com os valores das sobreposições das detecções
-    #         inter = [0.0] * len(rects)
-    #
-    #         # percorre o restante das detecções
-    #         for j in range(i, len(rects)):
-    #
-    #             # se a detecção já foi marcada para ser removida, pula ela
-    #             if remove[j]:
-    #                 continue
-    #
-    #             inter[j] = self._intersection(rects[i][0], rects[j][0]) / min(self._square(rects[i][0]),
-    #                                                                           self._square(rects[j][0]))
-    #
-    #         max_prob = 0.0
-    #         max_idx = 0
-    #         for k in range(i, len(rects)):
-    #             if inter[k] >= non_maximum_suppression_threshold:
-    #                 if rects[k][1] > max_prob:
-    #                     max_prob = rects[k][1]
-    #                     max_idx = k
-    #
-    #         for k in range(i, len(rects)):
-    #             if (inter[k] >= non_maximum_suppression_threshold) & (k != max_idx):
-    #                 remove[k] = True
-    #
-    #     for k in range(0, len(rects)):
-    #         if not remove[k]:
-    #             out.append(rects[k])
-    #
-    #     boxes = [box[0] for box in out]
-    #     scores = [score[1] for score in out]
-    #     classes = [cls[2] for cls in out]
-    #
-    #     return boxes, scores, classes
-
-    # @staticmethod
-    # def _intersection(rect1, rect2):
-    #     """ Calcula o quadrado da intersecção de dois retângulos
-    #
-    #     Args:
-    #         rect1 e rect2: coordenadas dos retângulos
-    #
-    #     Returns:
-    #         overlap_area: quadrado da intersecção (área da sobreposição)
-    #     """
-    #
-    #     x_overlap = max(0, min(rect1[2], rect2[2]) - max(rect1[0], rect2[0]))
-    #     y_overlap = max(0, min(rect1[3], rect2[3]) - max(rect1[1], rect2[1]))
-    #
-    #     overlap_area = x_overlap * y_overlap
-    #
-    #     return overlap_area
-    #
-    # @staticmethod
-    # def _square(rect):
-    #     """
-    #     Calculates square of rectangle
-    #     """
-    #     return abs(rect[2] - rect[0]) * abs(rect[3] - rect[1])
