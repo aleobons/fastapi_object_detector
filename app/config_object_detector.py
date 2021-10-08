@@ -16,7 +16,7 @@ USE_GPU = True
 MODELS_PATH = os.path.sep.join(['api', 'models'])
 
 # modelo treinado que será utilizado
-MODEL = os.path.sep.join([MODELS_PATH, 'centernet_resnet50_v1', 'saved_model'])
+MODEL = os.path.sep.join([MODELS_PATH, 'efficientdet_d1', 'v3', 'saved_model'])
 
 # define a forma que o modelo será carregado (diretamente pelo TENSORFLOW ou pelo KERAS)
 TYPE_MODEL = LoadModel.TypeModel.MODEL_TENSORFLOW
@@ -26,7 +26,7 @@ FILES_PATH = 'files'
 
 # define as informações úteis para a API
 INFO_UTEIS = {
-    ObjectDetector.Infos.INFO_LABEL_MAP: read_label_map.read_label_map('files/label_map.pbtxt'),
+    ObjectDetector.Infos.INFO_LABEL_MAP: read_label_map.read_label_map('files/label_map_2.pbtxt'),
 }
 
 # define os outputs e os seus respectivos parâmetros
@@ -56,10 +56,10 @@ OUTPUTS = {
 }
 
 # define o nome da API
-NAME_API = 'Detector de objetos'
+NAME_API = 'Detector de placas de veículos'
 
 # define a descrição da API
-DESCRIPTION_API = 'Serviço de detecção de objetos utilizando uma rede treinada no Coco dataset'
+DESCRIPTION_API = 'Serviço de detecção de placas de veículos'
 
 # define a versão da API
 VERSION_API = '0.1'
@@ -67,8 +67,8 @@ VERSION_API = '0.1'
 # define os endpoints da API e as tags
 CHAMADAS_API = {
     'OBJECTS': {
-        'prefix': '/detect_object',
-        'tag': 'detect_object',
+        'prefix': '/detect_license_plate',
+        'tag': 'detect_license_plate',
         'router': router.router
     }
 }
