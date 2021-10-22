@@ -24,9 +24,12 @@ TYPE_MODEL = LoadModel.TypeModel.MODEL_TENSORFLOW
 # path para os arquivos diversos
 FILES_PATH = 'files'
 
+# path para o label_map
+LABEL_MAP_PATH = os.path.sep.join([FILES_PATH, 'label_map.pbtxt'])
+
 # define as informações úteis para a API
 INFO_UTEIS = {
-    ObjectDetector.Infos.INFO_LABEL_MAP: read_label_map.read_label_map('files/label_map_2.pbtxt'),
+    ObjectDetector.Infos.INFO_LABEL_MAP: read_label_map.read_label_map(LABEL_MAP_PATH),
 }
 
 # define os outputs e os seus respectivos parâmetros

@@ -160,8 +160,6 @@ class ObjectDetector:
         # faz uma cópia da imagem original, evitando alterá-la
         image_with_objects = self.image_original.copy()
 
-        # print(result_info)
-
         # atualiza a imagem com objetos para cada objeto detectado
         for info in result_info:
 
