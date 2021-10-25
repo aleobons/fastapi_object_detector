@@ -1,10 +1,9 @@
-''' Arquivo de configuração
+""" Arquivo de configuração
 
 Define diversos parâmetros evitando alterar os códigos principais
-'''
+"""
 
 import os
-from utils.load_model import LoadModel
 from api.estimators.objectdetector import ObjectDetector
 import utils.read_label_map as read_label_map
 from api import router
@@ -17,9 +16,6 @@ MODELS_PATH = os.path.sep.join(['api', 'models'])
 
 # modelo treinado que será utilizado
 MODEL = os.path.sep.join([MODELS_PATH, 'efficientdet_d1', 'v3', 'saved_model'])
-
-# define a forma que o modelo será carregado (diretamente pelo TENSORFLOW ou pelo KERAS)
-TYPE_MODEL = LoadModel.TypeModel.MODEL_TENSORFLOW
 
 # path para os arquivos diversos
 FILES_PATH = 'files'
