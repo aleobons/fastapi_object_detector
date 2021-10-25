@@ -37,14 +37,17 @@ async def post(images_file: List[UploadFile] = File(...)) -> List[Dict]:
     # inicializa a lista de coordenadas
     coordenadas = []
 
+    # define o output
+    output = Estimator.Output.OUTPUT_BOXES
+
     # percorre a lista de arquivos de imagens e executa a detecção em cada imagem, incluindo o resultado na lista de
     # coordenadas
     for image_file in images_file:
-        # as coordenadas estão mapeadas com o índice 0
-        output_coordenadas = variaveis.outputs.get('0', {})
+        # coleta as informações do output
+        output_coordenadas = variaveis.outputs.get(output, None)
 
         # executa a predição na imagem informando o output de coordenadas
-        coordenadas.append(await execute(image_file, output=output_coordenadas))
+        coordenadas.append(await execute(image_file, output=output, vars_output=output_coordenadas))
 
     return coordenadas
 
@@ -63,11 +66,14 @@ async def post(images_file: UploadFile = File(...)):
             HTTPException: Um erro ocorre se não for detectado objeto.
         """
 
-    # o crop está mapeado com o índice 1
-    output_crop = variaveis.outputs.get('1', {})
+    # define o output
+    output = Estimator.Output.OUTPUT_BOXES
+
+    # coleta as informações do output
+    output_crop = variaveis.outputs.get(output, None)
 
     # executa a predição na imagem informando o output crop
-    image = await execute(images_file, output=output_crop)
+    image = await execute(images_file, output=output, vars_output=output_crop)
 
     # lida com a não detecção de nenhum objeto com um erro
     if image is None:
@@ -79,7 +85,7 @@ async def post(images_file: UploadFile = File(...)):
 
 @router.post("/vis_objects", status_code=200)
 async def post(images_file: UploadFile = File(...)):
-    """Detecta objetos e retorna as coordenadas
+    """Detecta objetos e retorna a imagem com as detecções
 
     Args:
         images_file: arquivo de imagem para o detector procurar objetos
@@ -89,25 +95,29 @@ async def post(images_file: UploadFile = File(...)):
 
     """
 
-    # a visualização dos objetos na imagem está mapeada com o índice 2
-    output_vis_objects = variaveis.outputs.get('2', {})
+    # define o output
+    output = Estimator.Output.OUTPUT_VIS_OBJECTS
+
+    # coleta as informações do output
+    output_vis_objects = variaveis.outputs.get(output, None)
 
     # executa a predição na imagem informando o output de visualização dos objetos
-    image = await execute(images_file, output=output_vis_objects)
+    image = await execute(images_file, output=output, vars_output=output_vis_objects)
 
     # O StreamingResponse é utilizado para retornar a imagem já codificada em PNG
     return StreamingResponse(io.BytesIO(image), media_type="image/png")
 
 
-async def execute(image_file, output):
-    """Detecta objetos e retorna as coordenadas
+async def execute(image_file, output, vars_output):
+    """Detecta objetos e retorna o output esperado
 
     Args:
         image_file: arquivo de imagem para o detector procurar objetos
-        output: dicionário com informações do output que o detector deve retornar
+        output: o output que o detector deve retornar
+        vars_output: dicionário com informações do output que o detector deve retornar
 
     Returns:
-        A imagem com os objetos anotados, os rótulos e as confianças
+        O output passado para o detector
 
     """
 
@@ -121,9 +131,9 @@ async def execute(image_file, output):
     print('Predicting... ', end='')
     start_time = time.time()
 
-    # utiliza o método predict do estimador (não é o método padrão para modelos Keras) passando a imagem e o output
-    # esperado
-    response_object = estimator.predict(image, output=output)
+    # utiliza o método predict do estimador (não é o método padrão para modelos Keras) passando a imagem, o output
+    # esperado e algumas variáveis importantes
+    response_object = estimator.predict(image, output=output, vars_output=vars_output)
 
     # finaliza a contagem do tempo de predição e exibe o tempo total em segundos
     end_time = time.time()

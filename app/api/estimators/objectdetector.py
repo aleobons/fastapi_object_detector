@@ -53,12 +53,13 @@ class ObjectDetector:
         self.show_confidence = None
         self.image_original = None
 
-    def predict(self, image, output):
+    def predict(self, image, output, vars_output):
         """ Predição na imagem conforme o output
 
         Args:
             image: imagem original para predição
-            output: dicionário com as informações do output que será retornado
+            output: nome do output que deverá ser retornado
+            vars_output: dicionário com as informações do output que será retornado
 
         Returns:
             O retorno vai variar conforme o output, podendo ser uma imagem codificada ou uma lista de coordenadas
@@ -67,10 +68,9 @@ class ObjectDetector:
         self.image_original = image
 
         # define a função que será utilizada para o output passado
-        output_function = self.outputs_functions.get(output.get('name', self.Output.OUTPUT_BOXES))
+        output_function = self.outputs_functions.get(output)
 
         # coleta outras informações conforme o output passado
-        vars_output = output.get('vars', {})
         confidence_threshold = vars_output.get(self.Infos.INFO_CONFIDENCE_THRESHOLD, 0.5)
         non_maximum_suppression_threshold = vars_output.get(self.Infos.INFO_NMS_THRESHOLD, 0.5)
         max_objects = vars_output.get(self.Infos.INFO_MAX_OBJECTS, 1)

@@ -30,27 +30,18 @@ INFO_UTEIS = {
 
 # define os outputs e os seus respectivos parâmetros
 OUTPUTS = {
-    '0': {
-        'name': ObjectDetector.Output.OUTPUT_BOXES,
-        'vars': {
+    ObjectDetector.Output.OUTPUT_BOXES: {
             ObjectDetector.Infos.INFO_MAX_OBJECTS: 5,
             ObjectDetector.Infos.INFO_CONFIDENCE_THRESHOLD: 0.4
-        }
     },
-    '1': {
-        'name': ObjectDetector.Output.OUTPUT_CROPS,
-        'vars': {
+    ObjectDetector.Output.OUTPUT_CROPS: {
             ObjectDetector.Infos.INFO_MAX_OBJECTS: 1,
             ObjectDetector.Infos.INFO_CONFIDENCE_THRESHOLD: 0.4
-        }
     },
-    '2': {
-        'name': ObjectDetector.Output.OUTPUT_VIS_OBJECTS,
-        'vars': {
+    ObjectDetector.Output.OUTPUT_VIS_OBJECTS: {
             ObjectDetector.Infos.INFO_MAX_OBJECTS: 5,
             ObjectDetector.Infos.INFO_CONFIDENCE_THRESHOLD: 0.4,
             ObjectDetector.Infos.INFO_SHOW_CONFIDENCE: True
-        }
     }
 }
 
