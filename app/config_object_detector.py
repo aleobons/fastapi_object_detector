@@ -56,7 +56,7 @@ VERSION_API = '0.1'
 
 # define os endpoints da API e as tags
 CHAMADAS_API = {
-    'OBJECTS': {
+    0: {
         'prefix': '/detect_license_plate',
         'tag': 'detect_license_plate',
         'router': router.router
