@@ -27,7 +27,7 @@ def read_label_map(label_map_path: str) -> dict:
             elif line == "}":
                 pass
             elif "id" in line:
-                item_id = int(line.split(":", 1)[1].strip())
+                item_id = int(line.split(":", 1)[1])
             elif "display_name" in line:
                 item_name = line.split(":", 1)[1].replace("\"", "").strip()
 
