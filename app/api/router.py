@@ -67,7 +67,7 @@ async def post(images_file: UploadFile = File(...)):
         """
 
     # define o output
-    output = Estimator.Output.OUTPUT_BOXES
+    output = Estimator.Output.OUTPUT_CROPS
 
     # coleta as informações do output
     output_crop = variaveis.outputs.get(output, None)
