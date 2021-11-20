@@ -4,18 +4,61 @@
 
 git clone https://github.com/aleobons/fastapi_object_detector.git
 
-2 - Instale os pacotes necessários:
+2 - Instale o Docker
 
-pip install -r requirements.txt
+3 - Crie a imagem Docker da API:
 
-** rode no diretório onde o arquivo requirements.txt está salvo
+docker build -t detector_placa_veiculos_api .
 
-3 - Teste a API:
+** rode no diretório raiz
 
-No diretório APP execute 
+4 - Crie a imagem do Locust:
 
-uvicorn main:app
+docker build -t locustio/locust:tensorflow .
 
-** esse comando está no arquivo USAGE.txt para lembrar rapidamente
+** rode no diretório tests
 
-4 - Atualize o arquivo config_object_detector.py conforme as particularidades do seu contexto
+5 - Crie os containers:
+
+docker compose up
+
+6 - Teste a API no browser:
+
+localhost:80/docs
+
+7- Alguns códigos Python para testar a API:
+
+# CROP
+import requests
+import base64
+
+images_file = ['file.jpg', 'file1.jpg']
+data = [('images_file', open(images_file[0], "rb")), ('images_file', open(images_file[1], "rb"))]
+
+response = requests.post('http://localhost/detector_placa_veiculos/crop', files=data)
+
+png_original = base64.b64decode(response.json()[0][0])
+
+with open('nome_crop.png', 'wb') as f_output:
+    f_output.write(png_original)
+
+# COORDENADAS
+import requests
+
+images_file = ['file.jpg', 'file1.jpg']
+data = [('images_file', open(images_file[0], "rb")), ('images_file', open(images_file[1], "rb"))]
+
+response = requests.post('http://localhost/detector_placa_veiculos/coordenadas', files=data)
+
+coordenadas = response.json()
+
+# VIS_OBJECTS
+import requests
+
+data = [('images_file', open('file.jpg', "rb"))]
+
+response = requests.post('http://localhost/detector_placa_veiculos/vis_objects', files=data)
+
+with open('file.png', 'wb') as fd:
+    for chunk in response.iter_content(chunk_size=128):
+        fd.write(chunk)
