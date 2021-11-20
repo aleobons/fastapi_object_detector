@@ -4,9 +4,7 @@ services:
     volumes:
       - ./models:/models
       - ./models/detector_placa_veiculos:/models/detector_placa_veiculos
-    command: --model_config_file=/models/models.config \
-    --model_config_file_poll_wait_seconds=60 \
-    --allow_version_labels_for_unavailable_models=true
+    command: --model_config_file=/models/models.config --model_config_file_poll_wait_seconds=60 --allow_version_labels_for_unavailable_models=true
     ports:
       - "8501:8501"
     links:
@@ -23,5 +21,5 @@ services:
     ports:
       - "8089:8089"
     volumes:
-      - ./:/mnt/locust
+      - ./tests:/mnt/locust
     command: -f /mnt/locust/locustfile.py
