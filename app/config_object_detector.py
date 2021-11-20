@@ -8,17 +8,11 @@ from api.estimators.objectdetector import ObjectDetector
 import utils.read_label_map as read_label_map
 from api import router
 
-# define se vai usar GPU ou não
-USE_GPU = True
-
-# path para o diretório dos modelos
-MODELS_PATH = os.path.sep.join(['api', 'models'])
-
-# modelo treinado que será utilizado
-MODEL = os.path.sep.join([MODELS_PATH, 'efficientdet_d1', 'v3', 'saved_model'])
+# URL para o predict do modelo
+MODEL_URL = 'http://detector_placa_veiculos:8501/v1/models/detector_placa_veiculos/labels/stable:predict'
 
 # path para os arquivos diversos
-FILES_PATH = 'files'
+FILES_PATH = os.path.sep.join(['app', 'files'])
 
 # path para o label_map
 LABEL_MAP_PATH = os.path.sep.join([FILES_PATH, 'label_map.pbtxt'])
@@ -35,7 +29,7 @@ OUTPUTS = {
             ObjectDetector.Infos.INFO_CONFIDENCE_THRESHOLD: 0.4
     },
     ObjectDetector.Output.OUTPUT_CROPS: {
-            ObjectDetector.Infos.INFO_MAX_OBJECTS: 1,
+            ObjectDetector.Infos.INFO_MAX_OBJECTS: 5,
             ObjectDetector.Infos.INFO_CONFIDENCE_THRESHOLD: 0.4
     },
     ObjectDetector.Output.OUTPUT_VIS_OBJECTS: {
