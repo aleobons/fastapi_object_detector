@@ -1,7 +1,4 @@
-from PIL import Image
-from PIL import UnidentifiedImageError
-from io import BytesIO
-from tensorflow.keras.preprocessing.image import img_to_array
+import tensorflow as tf
 from fastapi import HTTPException
 
 
@@ -39,10 +36,10 @@ class UploadImagePreprocessor:
 
         # tenta abrir o arquivo como imagem e converte para array
         try:
-            imagem = Image.open(BytesIO(file))
-            imagem = img_to_array(imagem, dtype='uint8')
+            imagem = tf.image.decode_jpeg(file, channels=3)
+            imagem = imagem.numpy().tolist()
 
-        except UnidentifiedImageError:
+        except tf.errors.InvalidArgumentError:
             # se um erro de imagem não identificada for detectado, dispara um erro de arquivo inválido
             raise HTTPException(status_code=415, detail="Invalid file.")
 
