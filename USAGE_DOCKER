@@ -1,0 +1,4 @@
+docker build -t license_plate_detector:v1 .
+
+docker run --rm -p 80:80 license_plate_detector:v1
+
