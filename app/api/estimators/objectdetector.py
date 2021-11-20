@@ -2,12 +2,15 @@ import tensorflow as tf
 import numpy as np
 import cv2
 from enum import Enum
+import json
+import requests
+import base64
 
 
 class ObjectDetector:
     """ Classe de detecção de objetos
 
-    Detecta, trata e retorna os objetos na imagem em 3 tipos de outputs:
+    Detecta, trata e retorna os objetos nas imagens em 3 tipos de outputs:
         Coordenadas dos objetos
         Crop do objeto com maior confiança
         Visualização dos objetos na imagem
@@ -16,10 +19,10 @@ class ObjectDetector:
         Output(Enum): enum de opções de output
         Infos(Enum): enum de informações importantes
         outputs_functions: mapeamento dos outputs com as funções
-        model: modelo utilizado para inferência
+        model_url: url do modelo utilizado para inferência
         label_map: mapeamento de rótulos no formato protobuf
         show_confidence: bool indicativo se deve ser exibido a confiança (somente para o output VIS_OBJECTS
-        image_original: imagem enviada para inferência sem alteração
+        images_original: lista de imagens enviadas para inferência sem alteração
 
     """
 
@@ -35,7 +38,7 @@ class ObjectDetector:
         INFO_LABEL_MAP = 'label_map'
         INFO_SHOW_CONFIDENCE = 'show_confidence'
 
-    def __init__(self, model, infos=None):
+    def __init__(self, model_url, infos=None):
         # define o mapeamento de outputs e funções
         self.outputs_functions = {
             self.Output.OUTPUT_BOXES: self._build_output_boxes,
@@ -43,29 +46,30 @@ class ObjectDetector:
             self.Output.OUTPUT_VIS_OBJECTS: self._build_output_vis
         }
 
-        # deixa o modelo disponível para toda a classe
-        self.model = model
-
         # deixa os rótulos disponíveis para toda a classe
         self.label_map = infos.get(self.Infos.INFO_LABEL_MAP, None)
 
         # inicializa atributos importantes para ser usado em alguns outputs sem precisar passar como parâmetro na função
         self.show_confidence = None
-        self.image_original = None
+        self.images_original = []
 
-    def predict(self, image, output, vars_output):
+        # armazena a url do modelo
+        self.model_url = model_url
+
+    def predict(self, images, output, vars_output):
         """ Predição na imagem conforme o output
 
         Args:
-            image: imagem original para predição
+            images: lista de imagens originais para predição
             output: nome do output que deverá ser retornado
             vars_output: dicionário com as informações do output que será retornado
 
         Returns:
-            O retorno vai variar conforme o output, podendo ser uma imagem codificada ou uma lista de coordenadas
+            O retorno vai variar conforme o output, podendo ser uma imagem ou lista de imagens codificadas ou uma lista
+            de coordenadas
         """
-        # guarda a imagem original
-        self.image_original = image
+        # guarda as imagens originais
+        self.images_original = [np.array(image).astype(np.float32) for image in images]
 
         # define a função que será utilizada para o output passado
         output_function = self.outputs_functions.get(output)
@@ -76,89 +80,111 @@ class ObjectDetector:
         max_objects = vars_output.get(self.Infos.INFO_MAX_OBJECTS, 1)
         self.show_confidence = vars_output.get(self.Infos.INFO_SHOW_CONFIDENCE, False)
 
-        # Converte o np array em um tensor e adiciona um axis ao tensor pois o modelo espera um batch de imagens
-        input_tensor = tf.convert_to_tensor(image)
-        input_tensor = input_tensor[tf.newaxis, ...]
+        # inicializa a lista de resultados das imagens
+        results_info = []
 
-        # inferência
-        detections = self.model(input_tensor)
+        # percorre cada imagem fazendo a predição individual
+        for image in images:
+            # Cria o json e o cabeçalho para usar no request
+            data = {"instances": [image]}
+            headers = {"content-type": "application/json"}
 
-        # Coleta a quantidade de objetos detectados
-        num_detections = int(detections.pop('num_detections'))
+            # inferência
+            response = requests.post(self.model_url, data=json.dumps(data), headers=headers)
 
-        # Filtra as detecções para obter apenas aquilo que é de fato detecções, retirando a dimensão batch
-        detections = {key: value[0, :num_detections].numpy()
-                      for key, value in detections.items()}
+            # transforma a resposta em json
+            detections = response.json()['predictions'][0]
 
-        # As classes detectadas devem ser inteiros
-        detections['detection_classes'] = detections['detection_classes'].astype(np.int64)
+            # Coleta a quantidade de objetos detectados
+            num_detections = int(detections.pop('num_detections'))
 
-        # Define o que é necessário para construir o output
-        key_of_interest = ['detection_classes', 'detection_boxes', 'detection_scores']
+            # Define o que é necessário para construir o output
+            key_of_interest = ['detection_classes', 'detection_boxes', 'detection_scores']
 
-        # coletando as informações de interesse
-        detections = {key: value for key, value in detections.items() if key in key_of_interest}
+            # coletando as informações de interesse e eliminando os valores que não são detecções, utilizando o número
+            # de detecções para fazer o recorte na lista
+            detections = {key: np.array(value[0:num_detections]) for key, value in detections.items() if
+                          key in key_of_interest}
 
-        # filtrando as detecções pelo threshold da confiança da predição
-        for key in key_of_interest:
-            scores = detections['detection_scores']
-            current_array = detections[key]
-            filtered_current_array = current_array[scores > confidence_threshold]
-            detections[key] = filtered_current_array
+            # As classes detectadas devem ser inteiros
+            detections['detection_classes'] = detections['detection_classes'].astype(np.int64)
 
-        # retira as detecções que se sobrescrevem conforme o treshold definido
-        boxes, scores, classes = self._nms(detections['detection_boxes'], detections['detection_scores'],
-                                           detections['detection_classes'], non_maximum_suppression_threshold)
+            # filtrando as detecções pelo threshold da confiança da predição
+            for key in key_of_interest:
+                scores = detections['detection_scores']
+                current_array = detections[key]
+                filtered_current_array = current_array[scores > confidence_threshold]
+                detections[key] = filtered_current_array
 
-        # agrupa as informações das detecções e ordena pelos de maior confiança
-        result_info = list(zip(boxes, scores, classes))
-        result_info.sort(key=lambda x: x[1], reverse=True)
+            # retira as detecções que se sobrescrevem conforme o treshold definido
+            boxes, scores, classes = self._nms(detections['detection_boxes'], detections['detection_scores'],
+                                               detections['detection_classes'], non_maximum_suppression_threshold)
 
-        # restringe as detecções pela quantidade máxima de objetos definida
-        result_info = result_info[:max_objects]
+            # agrupa as informações das detecções e ordena pelos de maior confiança
+            result_info = list(zip(boxes, scores, classes))
+            result_info.sort(key=lambda x: x[1], reverse=True)
+
+            # restringe as detecções pela quantidade máxima de objetos definida nas configurações
+            results_info.append(result_info[:max_objects])
 
         # chama a função correspondente ao output, passando as detecções
-        return output_function(result_info)
+        return output_function(results_info)
 
-    def _build_output_crops(self, result_info):
+    def _build_output_crops(self, results_info):
         """ Recorta o objeto da imagem original
 
         Args:
-            result_info: detecções realizadas com as coordenadas, confianças e rótulos
+            results_info: detecções realizadas com as coordenadas, confianças e rótulos para cada imagem
 
         Returns:
-            roi: imagem codificada com o recorte do objeto que está no topo da lista de detecções
+            crops: lista de recortes dos objetos codificadas em binário das imagens
         """
 
-        # inicializa o roi pois o modelo pode não ter detectado nenhum objeto
-        roi = None
+        # inicializa a lista de recortes
+        crops = []
 
-        # verifica se houve algum objeto detectado
-        if len(result_info) > 0:
-            # calcula as coordenadas em valores absolutos
-            boxes = self._calcule_coord(list(result_info[0][0]))
+        # percorre a lista de imagens para coletar as coordenadas. É feito uma junção entre as lista de imagens
+        # originais e a lista de resultados para garantir a relação correta entre eles
+        for (image, result_info) in zip(self.images_original, results_info):
 
-            # recorta o objeto da imagem original
-            roi = self.image_original[boxes[0]:boxes[2], boxes[1]:boxes[3]]
+            # inicializa a lista de roi para guardar o recorte de cada objeto
+            list_roi = []
 
-            # codifica o recorte em imagem png. É necessário converter a ordem dos canais de cores devido ao padrão do
-            # opencv
-            _, roi = cv2.imencode(".png", cv2.cvtColor(roi, cv2.COLOR_RGB2BGR))
+            # percorre a lista de objetos detectados da imagem
+            for info in result_info:
+                # calcula as coordenadas em valores absolutos
+                boxes = self._calcule_coord(self.images_original[0], list(info[0]))
 
-        return roi
+                # recorta o objeto da imagem original
+                roi = image[boxes[0]:boxes[2], boxes[1]:boxes[3]]
 
-    def _build_output_vis(self, result_info):
+                # codifica o recorte em imagem png. É necessário converter a ordem dos canais de cores devido ao padrão
+                # do opencv
+                _, roi = cv2.imencode(".png", cv2.cvtColor(roi, cv2.COLOR_RGB2BGR))
+
+                # converte em binário e armazena na lista de recortes (roi)
+                list_roi.append(base64.b64encode(roi))
+
+            # armazena na lista de recortes por imagem
+            crops.append(list_roi)
+
+        return crops
+
+    def _build_output_vis(self, results_info):
         """ Inclui a anotação dos objetos na imagem original
 
         Args:
-            result_info: detecções realizadas com as coordenadas, confianças e rótulos
+            results_info: detecções realizadas com as coordenadas, confianças e rótulos
 
         Returns:
             image_with_objects: imagem com os objetos anotados
         """
 
+        # na visualização somente uma imagem é enviada, portando será sempre o primeiro da lista
+        result_info = results_info[0]
+
         # faz uma cópia da imagem original, evitando alterá-la
-        image_with_objects = self.image_original.copy()
+        image_with_objects = self.images_original[0].copy()
 
         # atualiza a imagem com objetos para cada objeto detectado
         for info in result_info:
@@ -168,7 +194,7 @@ class ObjectDetector:
             label_class = self.label_map.get(class_id, class_id)
 
             # calcula as coordenadas em valores absolutos e desenha um retângulo na imagem com objetos
-            boxes = self._calcule_coord(list(info[0]))
+            boxes = self._calcule_coord(image_with_objects, list(info[0]))
             image_with_objects = cv2.rectangle(image_with_objects, (boxes[1], boxes[0]),
                                                (boxes[3], boxes[2]), (255, 0, 0), 2)
 
@@ -187,40 +213,47 @@ class ObjectDetector:
 
         return image_with_objects
 
-    def _build_output_boxes(self, result_info):
+    def _build_output_boxes(self, results_info):
         """ Lista as coordenadas dos objetos detectados
 
         Args:
-            result_info: detecções realizadas com as coordenadas, confianças e rótulos
+            results_info: detecções realizadas com as coordenadas, confianças e rótulos
 
         Returns:
             output: Uma lista de coordenadas com as coordenadas, confianças e nome dos rótulos
         """
 
-        # inicializa a lista de coordenadas
-        output = []
+        # inicializa a lista de coordenadas de todas as imagens
+        outputs = []
 
-        # acrescenta as coordenadas de cada objeto na lista de coordenadas
-        for info in result_info:
-            # coleta o nome do rótulo utilizando o id detectado no mapeamento de rótulos
-            class_id = info[2]
-            label_class = self.label_map.get(class_id, class_id)
+        # percorre a lista de imagens para coletar as coordenadas. É feito uma junção entre as lista de imagens
+        # originais e a lista de resultados para garantir a relação correta entre eles
+        for (image, result_info) in zip(self.images_original, results_info):
+            # inicializa a lista de coordenadas da imagem atual
+            output_image = []
 
-            # calcula as coordenadas em valores absolutos
-            boxes = self._calcule_coord(list(info[0]))
+            # percorre a lista de objetos detectados da imagem
+            for info in result_info:
+                # coleta o nome do rótulo utilizando o id detectado no mapeamento de rótulos
+                class_id = info[2]
+                label_class = self.label_map.get(class_id, class_id)
 
-            # constrói o dicionário para ser incluído na lista de coordenadas
-            object_detected = {
-                "detection_box": f"{boxes}",  # formato: [ymin, xmin, ymax, xmax]
-                "detection_score": f"{info[1]:.4f}",
-                "detection_class": f"{label_class}"
-            }
+                # constrói o dicionário para ser incluído na lista de coordenadas
+                object_detected = {
+                    "detection_box": f"{list(info[0])}",  # formato: [ymin, xmin, ymax, xmax]
+                    "detection_score": f"{info[1]:.4f}",
+                    "detection_class": f"{label_class}"
+                }
 
-            output.append(object_detected)
+                # acrescenta o objeto detectado na lista da imagem atual
+                output_image.append(object_detected)
 
-        return output
+            # acrescenta os objetos da imagem na lista de imagens
+            outputs.append(output_image)
 
-    def _calcule_coord(self, boxes_detecteds):
+        return outputs
+
+    def _calcule_coord(self, image, boxes_detecteds):
         """ Converte coordenadas de valores relativos para absolutos
 
         Args:
@@ -231,7 +264,7 @@ class ObjectDetector:
         """
 
         # coleta a altura e largura da imagem original
-        height, width = self.image_original.shape[:2]
+        height, width = image.shape[:2]
 
         # converte cada coordenada para o seu valor absoluto, garantindo que seja um valor inteiro
         ymin = int(boxes_detecteds[0] * height)
