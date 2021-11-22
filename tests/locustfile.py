@@ -10,7 +10,7 @@ class LoadTest(HttpUser):
 
     @task
     def predict_placa_veiculo(self):
-        image_path = ""
+        image_path = "00011.jpg"
 
         raw = tf.io.read_file(os.path.join('/mnt/locust/files', image_path))
         image = tf.image.decode_jpeg(raw, channels=3)
