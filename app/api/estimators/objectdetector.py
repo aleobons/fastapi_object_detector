@@ -98,34 +98,39 @@ class ObjectDetector:
             # Coleta a quantidade de objetos detectados
             num_detections = int(detections.pop('num_detections'))
 
-            # Define o que é necessário para construir o output
-            key_of_interest = ['detection_classes', 'detection_boxes', 'detection_scores']
+            # verifica se houve alguma detecção para proceder com as operações necessárias
+            if num_detections == 0:
+                results_info.append([])
+            else:
+                # Define o que é necessário para construir o output
+                key_of_interest = ['detection_classes', 'detection_boxes', 'detection_scores']
 
-            # coletando as informações de interesse e eliminando os valores que não são detecções, utilizando o número
-            # de detecções para fazer o recorte na lista
-            detections = {key: np.array(value[0:num_detections]) for key, value in detections.items() if
-                          key in key_of_interest}
+                # coletando as informações de interesse e eliminando os valores que não são detecções, utilizando o
+                # número
+                # de detecções para fazer o recorte na lista
+                detections = {key: np.array(value[0:num_detections]) for key, value in detections.items() if
+                              key in key_of_interest}
 
-            # As classes detectadas devem ser inteiros
-            detections['detection_classes'] = detections['detection_classes'].astype(np.int64)
+                # As classes detectadas devem ser inteiros
+                detections['detection_classes'] = detections['detection_classes'].astype(np.int64)
 
-            # filtrando as detecções pelo threshold da confiança da predição
-            for key in key_of_interest:
-                scores = detections['detection_scores']
-                current_array = detections[key]
-                filtered_current_array = current_array[scores > confidence_threshold]
-                detections[key] = filtered_current_array
+                # filtrando as detecções pelo threshold da confiança da predição
+                for key in key_of_interest:
+                    scores = detections['detection_scores']
+                    current_array = detections[key]
+                    filtered_current_array = current_array[scores > confidence_threshold]
+                    detections[key] = filtered_current_array
 
-            # retira as detecções que se sobrescrevem conforme o treshold definido
-            boxes, scores, classes = self._nms(detections['detection_boxes'], detections['detection_scores'],
-                                               detections['detection_classes'], non_maximum_suppression_threshold)
+                # retira as detecções que se sobrescrevem conforme o treshold definido
+                boxes, scores, classes = self._nms(detections['detection_boxes'], detections['detection_scores'],
+                                                   detections['detection_classes'], non_maximum_suppression_threshold)
 
-            # agrupa as informações das detecções e ordena pelos de maior confiança
-            result_info = list(zip(boxes, scores, classes))
-            result_info.sort(key=lambda x: x[1], reverse=True)
+                # agrupa as informações das detecções e ordena pelos de maior confiança
+                result_info = list(zip(boxes, scores, classes))
+                result_info.sort(key=lambda x: x[1], reverse=True)
 
-            # restringe as detecções pela quantidade máxima de objetos definida nas configurações
-            results_info.append(result_info[:max_objects])
+                # restringe as detecções pela quantidade máxima de objetos definida nas configurações
+                results_info.append(result_info[:max_objects])
 
         # chama a função correspondente ao output, passando as detecções
         return output_function(results_info)
