@@ -1,4 +1,4 @@
-docker build -t license_plate_detector .
+docker build -t detector_placa_veiculos_api .
 
-docker run --rm -p 80:80 license_plate_detector
+docker run --rm -p 80:80 detector_placa_veiculos_api
 
