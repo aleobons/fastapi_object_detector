@@ -26,15 +26,15 @@ INFO_UTEIS = {
 OUTPUTS = {
     ObjectDetector.Output.OUTPUT_BOXES: {
             ObjectDetector.Infos.INFO_MAX_OBJECTS: 5,
-            ObjectDetector.Infos.INFO_CONFIDENCE_THRESHOLD: 0.4
+            ObjectDetector.Infos.INFO_CONFIDENCE_THRESHOLD: 0.5
     },
     ObjectDetector.Output.OUTPUT_CROPS: {
             ObjectDetector.Infos.INFO_MAX_OBJECTS: 5,
-            ObjectDetector.Infos.INFO_CONFIDENCE_THRESHOLD: 0.4
+            ObjectDetector.Infos.INFO_CONFIDENCE_THRESHOLD: 0.5
     },
     ObjectDetector.Output.OUTPUT_VIS_OBJECTS: {
             ObjectDetector.Infos.INFO_MAX_OBJECTS: 5,
-            ObjectDetector.Infos.INFO_CONFIDENCE_THRESHOLD: 0.4,
+            ObjectDetector.Infos.INFO_CONFIDENCE_THRESHOLD: 0.5,
             ObjectDetector.Infos.INFO_SHOW_CONFIDENCE: True
     }
 }
