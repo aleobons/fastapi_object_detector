@@ -68,8 +68,6 @@ class ObjectDetector:
             O retorno vai variar conforme o output, podendo ser uma imagem ou lista de imagens codificadas ou uma lista
             de coordenadas
         """
-        # guarda as imagens originais
-        self.images_original = [np.array(image).astype(np.float32) for image in images]
 
         # define a função que será utilizada para o output passado
         output_function = self.outputs_functions.get(output)
@@ -80,20 +78,33 @@ class ObjectDetector:
         max_objects = vars_output.get(self.Infos.INFO_MAX_OBJECTS, 1)
         self.show_confidence = vars_output.get(self.Infos.INFO_SHOW_CONFIDENCE, False)
 
+        # inicializa a lista de instancias para o request
+        instance = []
+
+        for input_image in images:
+            # converte as imagens em tensor para ser usado nos outputs
+            self.images_original.append(tf.image.decode_jpeg(input_image, channels=3).numpy())
+
+            # decodifica a imagem em base64 e monta o dicionário de instancias do request
+            encoded_input_image_string = base64.b64encode(input_image)
+            input_image_string = encoded_input_image_string.decode("utf-8")
+            instance.append({"b64": input_image_string})
+
+        # Cria o json e o cabeçalho para usar no request
+        data = json.dumps({"instances": instance})
+        headers = {"content-type": "application/json"}
+
+        # inferência
+        response = requests.post(self.model_url, data=data, headers=headers)
+
+        # transforma a resposta em json
+        detections_por_imagem = response.json()['predictions']
+
         # inicializa a lista de resultados das imagens
         results_info = []
 
-        # percorre cada imagem fazendo a predição individual
-        for image in images:
-            # Cria o json e o cabeçalho para usar no request
-            data = {"instances": [image]}
-            headers = {"content-type": "application/json"}
-
-            # inferência
-            response = requests.post(self.model_url, data=json.dumps(data), headers=headers)
-
-            # transforma a resposta em json
-            detections = response.json()['predictions'][0]
+        # percorre as detecções de cada imagem
+        for detections in detections_por_imagem:
 
             # Coleta a quantidade de objetos detectados
             num_detections = int(detections.pop('num_detections'))
@@ -106,8 +117,7 @@ class ObjectDetector:
                 key_of_interest = ['detection_classes', 'detection_boxes', 'detection_scores']
 
                 # coletando as informações de interesse e eliminando os valores que não são detecções, utilizando o
-                # número
-                # de detecções para fazer o recorte na lista
+                # número de detecções para fazer o recorte na lista
                 detections = {key: np.array(value[0:num_detections]) for key, value in detections.items() if
                               key in key_of_interest}
 
@@ -158,14 +168,14 @@ class ObjectDetector:
             # percorre a lista de objetos detectados da imagem
             for info in result_info:
                 # calcula as coordenadas em valores absolutos
-                boxes = self._calcule_coord(self.images_original[0], list(info[0]))
+                boxes = self._calcule_coord(image, list(info[0]))
 
                 # recorta o objeto da imagem original
                 roi = image[boxes[0]:boxes[2], boxes[1]:boxes[3]]
 
-                # codifica o recorte em imagem png. É necessário converter a ordem dos canais de cores devido ao padrão
+                # codifica o recorte em imagem jpg. É necessário converter a ordem dos canais de cores devido ao padrão
                 # do opencv
-                _, roi = cv2.imencode(".png", cv2.cvtColor(roi, cv2.COLOR_RGB2BGR))
+                _, roi = cv2.imencode(".jpg", cv2.cvtColor(roi, cv2.COLOR_RGB2BGR))
 
                 # converte em binário e armazena na lista de recortes (roi)
                 list_roi.append(base64.b64encode(roi))
@@ -213,8 +223,8 @@ class ObjectDetector:
             cv2.putText(image_with_objects, text, (boxes[1], boxes[0] - 15),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 0, 0), 2)
 
-        # codifica a imagem png. É necessário converter a ordem dos canais de cores devido ao padrão do opencv
-        _, image_with_objects = cv2.imencode(".png", cv2.cvtColor(image_with_objects, cv2.COLOR_RGB2BGR))
+        # codifica a imagem jpg. É necessário converter a ordem dos canais de cores devido ao padrão do opencv
+        _, image_with_objects = cv2.imencode(".jpg", cv2.cvtColor(image_with_objects, cv2.COLOR_RGB2BGR))
 
         return image_with_objects
 
