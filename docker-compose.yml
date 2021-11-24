@@ -4,7 +4,8 @@ services:
     volumes:
       - ./models:/models
       - ./models/detector_placa_veiculos:/models/detector_placa_veiculos
-    command: --model_config_file=/models/models.config --model_config_file_poll_wait_seconds=60 --allow_version_labels_for_unavailable_models=true
+    command: --model_config_file=/models/models.config --model_config_file_poll_wait_seconds=60 --allow_version_labels_for_unavailable_models=true --enable_batching=true --batching_parameters_file=/models/batching.config
+
     ports:
       - "8501:8501"
     links:
