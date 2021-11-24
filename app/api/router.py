@@ -98,8 +98,8 @@ async def post(images_file: UploadFile = File(...)):
     # lista pois a função execute espera uma lista
     image = await execute([images_file], output=output, vars_output=output_vis_objects)
 
-    # O StreamingResponse é utilizado para retornar a imagem já codificada em PNG
-    return StreamingResponse(io.BytesIO(image), media_type="image/png")
+    # O StreamingResponse é utilizado para retornar a imagem já codificada em jpg
+    return StreamingResponse(io.BytesIO(image), media_type="image/jpg")
 
 
 async def execute(images_file, output, vars_output):
