@@ -1,48 +1,35 @@
 import tensorflow as tf
 from fastapi import HTTPException
-import base64
 
 
 class UploadImagePreprocessor:
-    """Classe que pré-processa os arquivos de imagens.
+    """Classe que lê os arquivos de imagens.
 
-    Possui apenas um método estático que lê o arquivo e converte em uma string decodificada
     """
 
     @staticmethod
     async def read_imagefile(upload_file):
         """Lê o arquivo de imagem.
 
-        Lê, valida e converte o arquivo de imagem em uma string decodificada
+        Lê e valida o arquivo de imagem
 
         Args:
           upload_file: arquivo de imagem
 
         Returns:
-          Uma string com a imagem decodificada
+          Uma string com a leitura da imagem
 
         Raises:
           HTTPException: Um erro devido ao upload de um arquivo que não é imagem
         """
 
-        # primeiro verifica a extensão do arquivo, cuidando para aceitar extensão em caixa alta
-        extension_image = upload_file.filename.split(".")[-1].lower() in ("jpg", "jpeg")
-
-        # dispara um erro se a extensão não estiver na lista permitida
-        if not extension_image:
-            raise HTTPException(status_code=415, detail="Unsupported file provided.")
-
-        # lê o arquivo e codifica o arquivo
+        # lê o arquivo
         input_image = await upload_file.read()
-        # encoded_input_image_string = base64.b64encode(input_image)
 
         # verifica se é uma imagem jpeg
         if not tf.io.is_jpeg(input_image, name=None):
             # caso negativo dispara um erro de arquivo inválido
             raise HTTPException(status_code=415, detail="Invalid file.")
 
-        # input_image_string = encoded_input_image_string.decode("utf-8")
-
-        # retorna a imagem decodificada
-        # return input_image_string
+        # retorna a imagem lida
         return input_image
