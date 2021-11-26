@@ -1,6 +1,5 @@
 import tensorflow as tf
 from fastapi import HTTPException
-import base64
 
 
 class UploadImagePreprocessor:
@@ -34,15 +33,11 @@ class UploadImagePreprocessor:
 
         # lê o arquivo e codifica o arquivo
         input_image = await upload_file.read()
-        # encoded_input_image_string = base64.b64encode(input_image)
 
         # verifica se é uma imagem jpeg
         if not tf.io.is_jpeg(input_image, name=None):
             # caso negativo dispara um erro de arquivo inválido
             raise HTTPException(status_code=415, detail="Invalid file.")
 
-        # input_image_string = encoded_input_image_string.decode("utf-8")
-
-        # retorna a imagem decodificada
-        # return input_image_string
+        # retorna a imagem lida
         return input_image
