@@ -1,6 +1,6 @@
 """Arquivo principal
 
-Ao carregar a API, esse arquivo é executado carregando o modelo e algumas variáves e configurando a API
+Ao carregar a API, esse arquivo é executado carregando algumas variáves e configurando a API
 """
 
 from fastapi import FastAPI
