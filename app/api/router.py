@@ -6,12 +6,11 @@ Uma operação para cada output do detector de objetos
 """
 
 # importa os pacotes necessários
-from fastapi import APIRouter, UploadFile, File
-import io
+from fastapi import APIRouter, UploadFile, File, HTTPException
 from starlette.responses import StreamingResponse
-from typing import List, Dict
+import io
+from typing import List
 import time
-from fastapi import HTTPException
 
 # importa os módulos próprios necessários
 from .preprocessors.uploadimagepreprocessor import UploadImagePreprocessor
@@ -23,7 +22,7 @@ router = APIRouter()
 
 
 @router.post("/coordenadas", status_code=200)
-async def post(images_file: List[UploadFile] = File(...)) -> List[Dict]:
+async def post(images_file: List[UploadFile] = File(...)):
     """Detecta objetos e retorna as coordenadas
 
     Args:
