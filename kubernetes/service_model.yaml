@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: model-service
+  namespace: default
+  labels:
+    app: detector-placa-veiculos-model
+spec:
+  type: NodePort
+  ports:
+    - name: detector-placa-veiculos-grpc
+      port: 8500
+      targetPort: 8500
+      nodePort: 30000
+    - name: detector-placa-veiculos-rest
+      port: 8501
+      targetPort: 8501
+      nodePort: 30001
+  selector:
+    app: detector-placa-veiculos-model

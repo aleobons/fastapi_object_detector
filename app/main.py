@@ -4,22 +4,20 @@ Ao carregar a API, esse arquivo é executado carregando algumas variáves e conf
 """
 
 from fastapi import FastAPI
-import api.global_variables as global_vars
-import config_object_detector as config
+from api import router
+import os
+import json
+
+
+config = json.load(open(os.environ.get("config_api")))
 
 # carrega a API
-app = FastAPI(title=config.NAME_API, description=config.DESCRIPTION_API, version=config.VERSION_API)
+app = FastAPI(
+    title=config["NAME_API"],
+    description=config["DESCRIPTION_API"],
+    version=config["VERSION_API"],
+)
 
 # define os endpoints da API
-for key_call, call in config.CHAMADAS_API.items():
-    app.include_router(call['router'], prefix=call['prefix'], tags=['tag'])
-
-# carrega a url do modelo
-global_vars.model_url = config.MODEL_URL
-
-# carrega as informações úteis que serão utilizadas na API
-for key, value in config.INFO_UTEIS.items():
-    global_vars.info_uteis[key] = value
-
-# carrega os parâmetros dos outputs que estarão disponíveis
-global_vars.outputs = config.OUTPUTS
+for (key_call, call), router in zip(config["CHAMADAS_API"].items(), [router.router]):
+    app.include_router(router, prefix=call["prefix"], tags=["tag"])

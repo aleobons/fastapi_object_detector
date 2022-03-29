@@ -2,13 +2,13 @@ import tensorflow as tf
 import numpy as np
 import cv2
 from enum import Enum
-import json
-import requests
 import base64
+from tensorflow_serving.apis import predict_pb2
+from tensorflow.python.framework import tensor_util
 
 
 class ObjectDetector:
-    """ Classe de detecção de objetos
+    """Classe de detecção de objetos
 
     Detecta, trata e retorna os objetos nas imagens em 3 tipos de outputs:
         Coordenadas dos objetos
@@ -19,7 +19,6 @@ class ObjectDetector:
         Output(Enum): enum de opções de output
         Infos(Enum): enum de informações importantes
         outputs_functions: mapeamento dos outputs com as funções
-        model_url: url do modelo utilizado para inferência
         label_map: mapeamento de rótulos no formato protobuf
         show_confidence: bool indicativo se deve ser exibido a confiança (somente para o output VIS_OBJECTS
         images_original: lista de imagens enviadas para inferência sem alteração
@@ -27,37 +26,75 @@ class ObjectDetector:
     """
 
     class Output(Enum):
-        OUTPUT_BOXES = 'OUTPUT_BOXES'
-        OUTPUT_CROPS = 'OUTPUT_CROPS'
-        OUTPUT_VIS_OBJECTS = 'OUTPUT_VIS_OBJECTS'
+        OUTPUT_BOXES = "OUTPUT_BOXES"
+        OUTPUT_CROPS = "OUTPUT_CROPS"
+        OUTPUT_VIS_OBJECTS = "OUTPUT_VIS_OBJECTS"
 
     class Infos(Enum):
-        INFO_CONFIDENCE_THRESHOLD = 'confidence_threshold'
-        INFO_MAX_OBJECTS = 'max_objects'
-        INFO_NMS_THRESHOLD = 'non_maximum_suppression_threshold'
-        INFO_LABEL_MAP = 'label_map'
-        INFO_SHOW_CONFIDENCE = 'show_confidence'
+        INFO_CONFIDENCE_THRESHOLD = "confidence_threshold"
+        INFO_MAX_OBJECTS = "max_objects"
+        INFO_NMS_THRESHOLD = "non_maximum_suppression_threshold"
+        INFO_SHOW_CONFIDENCE = "show_confidence"
 
-    def __init__(self, model_url, infos=None):
+    def __init__(self, stub, image_processor, label_map=None):
         # define o mapeamento de outputs e funções
         self.outputs_functions = {
             self.Output.OUTPUT_BOXES: self._build_output_boxes,
             self.Output.OUTPUT_CROPS: self._build_output_crops,
-            self.Output.OUTPUT_VIS_OBJECTS: self._build_output_vis
+            self.Output.OUTPUT_VIS_OBJECTS: self._build_output_vis,
         }
 
         # deixa os rótulos disponíveis para toda a classe
-        self.label_map = infos.get(self.Infos.INFO_LABEL_MAP, None)
+        self.label_map = label_map
 
         # inicializa atributos importantes para ser usado em alguns outputs sem precisar passar como parâmetro na função
         self.show_confidence = None
-        self.images_original = []
+        self.images_original = None
 
-        # armazena a url do modelo
-        self.model_url = model_url
+        # armazena o stub para a chamada gRPC
+        self.stub = stub
+
+        self.image_processor = image_processor
+
+    def request_grpc(self, image_bytes):
+
+        predict_request = predict_pb2.PredictRequest()
+        predict_request.model_spec.name = "detector_placa_veiculos"
+        predict_request.model_spec.signature_name = "serving_default"
+        predict_request.inputs["input_tensor"].CopyFrom(
+            tensor_util.make_tensor_proto(image_bytes, tf.string)
+        )
+
+        predict_response = self.stub.Predict(predict_request, 60)
+
+        keys_interesse = [
+            "detection_classes",
+            "detection_boxes",
+            "detection_scores",
+            "num_detections",
+        ]
+        list_detections = []
+        for key, value in predict_response.outputs.items():
+            if key in keys_interesse:
+                dim = value.tensor_shape.dim
+                if len(dim) <= 2:
+                    results = np.array_split(value.float_val, int(dim[0].size))
+                else:
+                    results = np.array_split(value.float_val, int(dim[0].size))
+                    results = [
+                        np.array_split(result, int(dim[1].size)) for result in results
+                    ]
+
+                for (index, result) in enumerate(results):
+                    if len(list_detections) > index:
+                        list_detections[index][key] = result
+                    else:
+                        list_detections.append({key: result})
+
+        return list_detections
 
     def predict(self, images, output, vars_output):
-        """ Predição na imagem conforme o output
+        """Predição na imagem conforme o output
 
         Args:
             images: lista de imagens originais para predição
@@ -73,32 +110,23 @@ class ObjectDetector:
         output_function = self.outputs_functions.get(output)
 
         # coleta outras informações conforme o output passado
-        confidence_threshold = vars_output.get(self.Infos.INFO_CONFIDENCE_THRESHOLD, 0.5)
-        non_maximum_suppression_threshold = vars_output.get(self.Infos.INFO_NMS_THRESHOLD, 0.5)
-        max_objects = vars_output.get(self.Infos.INFO_MAX_OBJECTS, 1)
-        self.show_confidence = vars_output.get(self.Infos.INFO_SHOW_CONFIDENCE, False)
+        confidence_threshold = vars_output.get(
+            self.Infos.INFO_CONFIDENCE_THRESHOLD.value, 0.5
+        )
+        non_maximum_suppression_threshold = vars_output.get(
+            self.Infos.INFO_NMS_THRESHOLD.value, 0.5
+        )
+        max_objects = vars_output.get(self.Infos.INFO_MAX_OBJECTS.value, 1)
+        self.show_confidence = vars_output.get(
+            self.Infos.INFO_SHOW_CONFIDENCE.value, False
+        )
 
-        # inicializa a lista de instancias para o request
-        instance = []
-
-        for input_image in images:
-            # converte as imagens em tensor para ser usado nos outputs
-            self.images_original.append(tf.image.decode_jpeg(input_image, channels=3).numpy())
-
-            # decodifica a imagem em base64 e monta o dicionário de instancias do request
-            encoded_input_image_string = base64.b64encode(input_image)
-            input_image_string = encoded_input_image_string.decode("utf-8")
-            instance.append({"b64": input_image_string})
-
-        # Cria o json e o cabeçalho para usar no request
-        data = json.dumps({"instances": instance})
-        headers = {"content-type": "application/json"}
+        self.images_original = [
+            self.image_processor.decode_image(image) for image in images
+        ]
 
         # inferência
-        response = requests.post(self.model_url, data=data, headers=headers)
-
-        # transforma a resposta em json
-        detections_por_imagem = response.json()['predictions']
+        detections_por_imagem = self.request_grpc(images)
 
         # inicializa a lista de resultados das imagens
         results_info = []
@@ -107,33 +135,48 @@ class ObjectDetector:
         for detections in detections_por_imagem:
 
             # Coleta a quantidade de objetos detectados
-            num_detections = int(detections.pop('num_detections'))
+            num_detections = int(detections.pop("num_detections"))
 
             # verifica se houve alguma detecção para proceder com as operações necessárias
             if num_detections == 0:
                 results_info.append([])
             else:
                 # Define o que é necessário para construir o output
-                key_of_interest = ['detection_classes', 'detection_boxes', 'detection_scores']
+                key_of_interest = [
+                    "detection_classes",
+                    "detection_boxes",
+                    "detection_scores",
+                ]
 
                 # coletando as informações de interesse e eliminando os valores que não são detecções, utilizando o
                 # número de detecções para fazer o recorte na lista
-                detections = {key: np.array(value[0:num_detections]) for key, value in detections.items() if
-                              key in key_of_interest}
+                detections = {
+                    key: np.array(value[0:num_detections])
+                    for key, value in detections.items()
+                    if key in key_of_interest
+                }
 
                 # As classes detectadas devem ser inteiros
-                detections['detection_classes'] = detections['detection_classes'].astype(np.int64)
+                detections["detection_classes"] = detections[
+                    "detection_classes"
+                ].astype(np.int64)
 
                 # filtrando as detecções pelo threshold da confiança da predição
                 for key in key_of_interest:
-                    scores = detections['detection_scores']
+                    scores = detections["detection_scores"]
                     current_array = detections[key]
-                    filtered_current_array = current_array[scores > confidence_threshold]
+                    filtered_current_array = current_array[
+                        scores > confidence_threshold
+                    ]
                     detections[key] = filtered_current_array
 
                 # retira as detecções que se sobrescrevem conforme o treshold definido
-                boxes, scores, classes = self._nms(detections['detection_boxes'], detections['detection_scores'],
-                                                   detections['detection_classes'], non_maximum_suppression_threshold)
+                boxes, scores, classes = self._nms(
+                    detections["detection_boxes"],
+                    detections["detection_scores"],
+                    detections["detection_classes"],
+                    non_maximum_suppression_threshold,
+                )
 
                 # agrupa as informações das detecções e ordena pelos de maior confiança
                 result_info = list(zip(boxes, scores, classes))
@@ -146,7 +189,7 @@ class ObjectDetector:
         return output_function(results_info)
 
     def _build_output_crops(self, results_info):
-        """ Recorta o objeto da imagem original
+        """Recorta o objeto da imagem original
 
         Args:
             results_info: detecções realizadas com as coordenadas, confianças e rótulos para cada imagem
@@ -171,7 +214,7 @@ class ObjectDetector:
                 boxes = self._calcule_coord(image, list(info[0]))
 
                 # recorta o objeto da imagem original
-                roi = image[boxes[0]:boxes[2], boxes[1]:boxes[3]]
+                roi = image[boxes[0] : boxes[2], boxes[1] : boxes[3]]
 
                 # codifica o recorte em imagem jpg. É necessário converter a ordem dos canais de cores devido ao padrão
                 # do opencv
@@ -186,7 +229,7 @@ class ObjectDetector:
         return crops
 
     def _build_output_vis(self, results_info):
-        """ Inclui a anotação dos objetos na imagem original
+        """Inclui a anotação dos objetos na imagem original
 
         Args:
             results_info: detecções realizadas com as coordenadas, confianças e rótulos
@@ -199,7 +242,7 @@ class ObjectDetector:
         result_info = results_info[0]
 
         # faz uma cópia da imagem original, evitando alterá-la
-        image_with_objects = self.images_original[0].copy()
+        image_with_objects = self.images_original[0]
 
         # atualiza a imagem com objetos para cada objeto detectado
         for info in result_info:
@@ -210,8 +253,13 @@ class ObjectDetector:
 
             # calcula as coordenadas em valores absolutos e desenha um retângulo na imagem com objetos
             boxes = self._calcule_coord(image_with_objects, list(info[0]))
-            image_with_objects = cv2.rectangle(image_with_objects, (boxes[1], boxes[0]),
-                                               (boxes[3], boxes[2]), (255, 0, 0), 2)
+            image_with_objects = cv2.rectangle(
+                image_with_objects,
+                (boxes[1], boxes[0]),
+                (boxes[3], boxes[2]),
+                (255, 0, 0),
+                2,
+            )
 
             # define o texto que será incluído na imagem com objetos, incluindo a confiança ou não
             if self.show_confidence:
@@ -220,16 +268,25 @@ class ObjectDetector:
                 text = f"{label_class}"
 
             # escreve o texto na imagem com objetos
-            cv2.putText(image_with_objects, text, (boxes[1], boxes[0] - 15),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 0, 0), 2)
+            cv2.putText(
+                image_with_objects,
+                text,
+                (boxes[1], boxes[0] - 15),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.75,
+                (255, 0, 0),
+                2,
+            )
 
         # codifica a imagem jpg. É necessário converter a ordem dos canais de cores devido ao padrão do opencv
-        _, image_with_objects = cv2.imencode(".jpg", cv2.cvtColor(image_with_objects, cv2.COLOR_RGB2BGR))
+        _, image_with_objects = cv2.imencode(
+            ".jpg", cv2.cvtColor(image_with_objects, cv2.COLOR_RGB2BGR)
+        )
 
         return image_with_objects
 
     def _build_output_boxes(self, results_info):
-        """ Lista as coordenadas dos objetos detectados
+        """Lista as coordenadas dos objetos detectados
 
         Args:
             results_info: detecções realizadas com as coordenadas, confianças e rótulos
@@ -243,7 +300,7 @@ class ObjectDetector:
 
         # percorre a lista de imagens para coletar as coordenadas. É feito uma junção entre as lista de imagens
         # originais e a lista de resultados para garantir a relação correta entre eles
-        for (image, result_info) in zip(self.images_original, results_info):
+        for result_info in results_info:
             # inicializa a lista de coordenadas da imagem atual
             output_image = []
 
@@ -255,9 +312,10 @@ class ObjectDetector:
 
                 # constrói o dicionário para ser incluído na lista de coordenadas
                 object_detected = {
-                    "detection_box": f"{list(info[0])}",  # formato: [ymin, xmin, ymax, xmax]
+                    # formato: [ymin, xmin, ymax, xmax]
+                    "detection_box": f"{list(info[0])}",
                     "detection_score": f"{info[1]:.4f}",
-                    "detection_class": f"{label_class}"
+                    "detection_class": f"{label_class}",
                 }
 
                 # acrescenta o objeto detectado na lista da imagem atual
@@ -269,7 +327,7 @@ class ObjectDetector:
         return outputs
 
     def _calcule_coord(self, image, boxes_detecteds):
-        """ Converte coordenadas de valores relativos para absolutos
+        """Converte coordenadas de valores relativos para absolutos
 
         Args:
             boxes_detecteds: lista de coordenadas com valores relativos
@@ -291,7 +349,7 @@ class ObjectDetector:
 
     @staticmethod
     def _nms(boxes, scores, classes, iou_threshold=0.5):
-        """ Retira as sobreposições de detecções
+        """Retira as sobreposições de detecções
 
         Args:
             boxes: lista de coordenadas
@@ -306,7 +364,8 @@ class ObjectDetector:
 
         # Utilizo a função do Tensorflow para selecionar os índices que serão mantidos
         selected_indices = tf.image.non_max_suppression(
-            boxes, scores, max_output_size=len(boxes), iou_threshold=iou_threshold)
+            boxes, scores, max_output_size=len(boxes), iou_threshold=iou_threshold
+        )
 
         # coleto as coordenadas, confianças e rótulos que serão mantidos
         selected_boxes = tf.gather(boxes, selected_indices)

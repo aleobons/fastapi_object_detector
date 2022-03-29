@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: detector-placa-veiculos-api
+  template:
+    metadata:
+      labels:
+        app: detector-placa-veiculos-api
+    spec:
+      containers:
+        - name: detector-placa-veiculos-api
+          imagePullPolicy: Always
+          image: index.docker.io/aleobons/fastapi-object-detector:v1.0
+          env:
+            - name: config_model
+              value: /configs/config_model.json
+            - name: config_output
+              value: /configs/config_output.json
+            - name: config_api
+              value: /configs/config_api.json
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: 200M
+              cpu: 60m
+            limits:
+              memory: 800M
+              cpu: 400m
+          livenessProbe:
+            httpGet:
+              path: /detect_license_plate/healthcheck
+              port: 80
+          volumeMounts:
+            - name: config-volume
+              mountPath: /configs
+      restartPolicy: Always
+      volumes:
+        - name: config-volume
+          hostPath:
+            path: /var/tmp/configs
+            type: Directory

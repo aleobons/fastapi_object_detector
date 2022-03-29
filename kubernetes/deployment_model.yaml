@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: model-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: detector-placa-veiculos-model
+  template:
+    metadata:
+      labels:
+        app: detector-placa-veiculos-model
+    spec:
+      containers:
+        - name: detector-placa-veiculos-model
+          imagePullPolicy: IfNotPresent
+          args:
+            - --model_config_file=/models/model/models.config
+            - --allow_version_labels_for_unavailable_models=true
+            - --enable_batching=true
+            - --batching_parameters_file=/models/model/batching.config
+            - --tensorflow_intra_op_parallelism=4
+            - --tensorflow_inter_op_parallelism=3
+            - --monitoring_config_file=/models/model/monitoring.config
+          image: tensorflow/serving
+          ports:
+            - containerPort: 8501
+            - containerPort: 8500
+          resources:
+            requests:
+              memory: 1000M
+              cpu: 2000m
+            limits:
+              memory: 3500M
+              cpu: 4000m
+          volumeMounts:
+            - name: detector-placa-veiculos-volume
+              mountPath: /models/model
+      restartPolicy: Always
+      volumes:
+        - name: detector-placa-veiculos-volume
+          hostPath:
+            path: /var/tmp/model
+            type: Directory

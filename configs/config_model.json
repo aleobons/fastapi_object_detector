@@ -1,0 +1,6 @@
+{
+    "MODEL_URL_GRPC": "model-service-2:8500",
+    "GRPC_MAX_SEND_MESSAGE_LENGTH": 3840000,
+    "GRPC_MAX_RECEIVE_MESSAGE_LENGTH": 384000000,
+    "LABEL_MAP_PATH": "app/files/label_map.pbtxt"
+}

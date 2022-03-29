@@ -1,10 +1,13 @@
 # USAGE
-# docker build -t detector_placa_veiculos_api .
+# docker build -t aleobons/fastapi-object-detector:v1.0 .
 
 FROM tensorflow/tensorflow:latest
 
 ENV PYTHONPATH "${PYTHONPATH}:/app"
 ENV PYTHONUNBUFFERED=1
+ENV config_model="/config_model.json"
+ENV config_output="/config_output.json"
+ENV config_api="/config_api.json"
 
 COPY requirements.txt .
 

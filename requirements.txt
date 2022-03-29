@@ -2,3 +2,5 @@ fastapi~=0.65.2
 uvicorn~=0.14.0
 python-multipart~=0.0.5
 opencv-contrib-python~=4.5.2.54
+tensorflow-serving-api~=2.7.0
+filetype

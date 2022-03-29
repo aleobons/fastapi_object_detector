@@ -1,0 +1,19 @@
+{
+    "OUTPUTS": {
+        "OUTPUT_BOXES": {
+            "max_objects": 5,
+            "confidence_threshold": 0.2
+        },
+        "OUTPUT_CROPS": {
+            "max_objects": 10,
+            "confidence_threshold": 0.4,
+            "non_maximum_suppression_threshold": 0.2
+        },
+        "OUTPUT_VIS_OBJECTS": {
+            "max_objects": 5,
+            "confidence_threshold": 0.2,
+            "show_confidence": true,
+            "non_maximum_suppression_threshold": 0.2
+        }
+    }
+}

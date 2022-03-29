@@ -1,4 +1,0 @@
-docker build -t detector_placa_veiculos_api .
-
-docker run --rm -p 80:80 detector_placa_veiculos_api
-

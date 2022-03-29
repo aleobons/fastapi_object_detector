@@ -1,0 +1,11 @@
+{
+    "NAME_API": "Detector de placas de veículos",
+    "DESCRIPTION_API": "Serviço de detecção de placas de veículos",
+    "VERSION_API": "1.0",
+    "CHAMADAS_API": {
+        "0": {
+            "prefix": "/detect_license_plate",
+            "tag": "detect_license_plate"
+        }
+    }
+}
