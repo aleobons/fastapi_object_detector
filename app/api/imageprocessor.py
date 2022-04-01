@@ -6,7 +6,7 @@ import filetype
 class ImageProcessor:
     """Classe que processa as imagens.
 
-      Lê, decodifica
+      Lê e decodifica imagens
 
     """
 
@@ -46,4 +46,5 @@ class ImageProcessor:
 
     @staticmethod
     def decode_image(input_image):
+        # decodifica usando o Tensorflow e retorna como array numpy
         return tf.image.decode_jpeg(input_image, channels=3).numpy()
