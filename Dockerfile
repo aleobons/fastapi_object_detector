@@ -1,16 +1,19 @@
-# USAGE
+# BUILD
 # docker build -t aleobons/fastapi-object-detector:v1.0 .
 
 FROM tensorflow/tensorflow:latest
 
 ENV PYTHONPATH "${PYTHONPATH}:/app"
 ENV PYTHONUNBUFFERED=1
+
+# path dos arquivos de configuração que devem ser passados como environments variables
 ENV config_model="/config_model.json"
 ENV config_output="/config_output.json"
 ENV config_api="/config_api.json"
 
 COPY requirements.txt .
 
+# ffmeg, libsm6 e libxext6 são instalados por conta do opencv
 RUN pip install -r requirements.txt && \
 	rm requirements.txt && \
 	apt-get update && \
