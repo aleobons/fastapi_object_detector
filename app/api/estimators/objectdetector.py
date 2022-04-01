@@ -12,7 +12,7 @@ class ObjectDetector:
 
     Detecta, trata e retorna os objetos nas imagens em 3 tipos de outputs:
         Coordenadas dos objetos
-        Crop do objeto com maior confiança
+        Crop dos objetos
         Visualização dos objetos na imagem
 
     Attributes:
@@ -20,8 +20,10 @@ class ObjectDetector:
         Infos(Enum): enum de informações importantes
         outputs_functions: mapeamento dos outputs com as funções
         label_map: mapeamento de rótulos no formato protobuf
-        show_confidence: bool indicativo se deve ser exibido a confiança (somente para o output VIS_OBJECTS
+        show_confidence: bool indicativo se deve ser exibido a confiança (somente para o output VIS_OBJECTS)
         images_original: lista de imagens enviadas para inferência sem alteração
+        stub: conexão para requisições gRPC
+        image_processor: objeto que faz o processamento de imagens
 
     """
 
@@ -54,38 +56,59 @@ class ObjectDetector:
         # armazena o stub para a chamada gRPC
         self.stub = stub
 
+        # armazena o objeto de processamento de imagens
         self.image_processor = image_processor
 
-    def request_grpc(self, image_bytes):
+    def request_grpc(self, images_bytes):
+        """ Requisição gRPC
 
+        Args:
+            images_bytes: lista de imagens já lidas (em bytes)
+
+        Returns:
+            Retorna uma lista de detecções com as chaves de interesse e valores já decodificados
+        """
+
+        # monta e executa a requisição
         predict_request = predict_pb2.PredictRequest()
-        predict_request.model_spec.name = "detector_placa_veiculos"
+        predict_request.model_spec.name = "detector_placa_veiculos" #TODO passar como parâmetro
         predict_request.model_spec.signature_name = "serving_default"
         predict_request.inputs["input_tensor"].CopyFrom(
-            tensor_util.make_tensor_proto(image_bytes, tf.string)
+            tensor_util.make_tensor_proto(images_bytes, tf.string)
         )
 
         predict_response = self.stub.Predict(predict_request, 60)
 
+        # define as chaves importantes do dicionário retornado pelo modelo
         keys_interesse = [
             "detection_classes",
             "detection_boxes",
             "detection_scores",
             "num_detections",
         ]
+        
+        # decodifica a resposta do modelo e monta a lista de detecções
         list_detections = []
         for key, value in predict_response.outputs.items():
             if key in keys_interesse:
+                # como a resposta vem numa lista única, é necessário dividir conforme a 
+                # quantidade de imagens que passaram pelo modelo
                 dim = value.tensor_shape.dim
-                if len(dim) <= 2:
-                    results = np.array_split(value.float_val, int(dim[0].size))
-                else:
-                    results = np.array_split(value.float_val, int(dim[0].size))
+                
+                # a primeira divisão é feita pela quantidade de imagens
+                results = np.array_split(value.float_val, int(dim[0].size))
+                
+                # se o array tiver mais de duas dimensões (quando tem mais de um objeto detectado), é necessário
+                # realizar mais splits para manter cada objeto com sua respectiva imagem
+                if len(dim) > 2:
                     results = [
                         np.array_split(result, int(dim[1].size)) for result in results
                     ]
 
+                # após a separação dos objetos, é criada a lista de detecções com todas as informações de interesse
                 for (index, result) in enumerate(results):
+                    # verifica se é a primeira informação armazenada para cada imagem. Se for, apenas acrescenta o tipo de informação
+                    # se não for, recupera o index da imagem na lista e inclui a informação
                     if len(list_detections) > index:
                         list_detections[index][key] = result
                     else:
@@ -121,6 +144,7 @@ class ObjectDetector:
             self.Infos.INFO_SHOW_CONFIDENCE.value, False
         )
 
+        # decodifica as imagens para ser utilizado posteriormente
         self.images_original = [
             self.image_processor.decode_image(image) for image in images
         ]
