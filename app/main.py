@@ -1,6 +1,6 @@
 """Arquivo principal
 
-Ao carregar a API, esse arquivo é executado carregando algumas variáves e configurando a API
+Ao carregar a API, esse arquivo é executado carregando e configurando a API
 """
 
 from fastapi import FastAPI
@@ -8,7 +8,7 @@ from api import router
 import os
 import json
 
-
+# carrega configurações básicas da API
 config = json.load(open(os.environ.get("config_api")))
 
 # carrega a API
