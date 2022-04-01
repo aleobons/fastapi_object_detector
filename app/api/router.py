@@ -1,6 +1,6 @@
 """Funções do router
 
-Funções utilizadas para mapear as operações do endepoint principal da API
+Funções utilizadas para mapear as operações do endpoint principal da API
 
 Uma operação para cada output do detector de objetos
 """
@@ -23,6 +23,7 @@ import utils.read_label_map as read_label_map
 # módulo que lida com as diversas operações do endpoint
 router = APIRouter()
 
+# carrega os arquivos de configurações
 config_model = json.load(open(os.environ.get("config_model")))
 config_output = json.load(open(os.environ.get("config_output")))
 config_api = os.environ.get("config_api")
@@ -82,7 +83,7 @@ async def post(images_file: List[UploadFile] = File(...)):
 
 @router.post("/crop", status_code=200)
 async def post(images_file: List[UploadFile] = File(...)):
-    """Detecta objetos e retorna a recorte do objeto
+    """Detecta objetos e retorna os recortes dos objetos
 
     Args:
         images_file: lista arquivos de imagens para o detector procurar objetos
@@ -149,19 +150,19 @@ async def execute(images_file, output, vars_output):
         O output passado para o detector
 
     """
-    # carrega e pré-processa as imagens
+    # carrega as imagens
     images = [
         await ImageProcessor.read_imagefile(image_file) for image_file in images_file
     ]
 
-    # instancia o estimador que será utilizado passando o modelo já carregado e informações úteis para predição
+    # instancia o estimador que será utilizado passando o stub para requisição gRPC, o label map e um objeto de pré-processamento de imagens
     estimator = Estimator(
         stub=stub,
         label_map=label_map,
         image_processor=ImageProcessor,
     )
 
-    # utiliza o método predict do estimador (não é o método padrão para modelos Keras) passando as imagens, o output
+    # utiliza o método predict do estimador (não é o método padrão para modelos TF/Keras) passando as imagens, o output
     # esperado e algumas variáveis importantes
     response_object = estimator.predict(images, output=output, vars_output=vars_output)
 
