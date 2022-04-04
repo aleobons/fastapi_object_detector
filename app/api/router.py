@@ -26,7 +26,7 @@ router = APIRouter()
 # carrega os arquivos de configurações
 config_model = json.load(open(os.environ.get("config_model")))
 config_output = json.load(open(os.environ.get("config_output")))
-config_api = os.environ.get("config_api")
+config_api = json.load(open(os.environ.get("config_api")))
 
 # transforma o label map em um dicionário
 label_map = read_label_map.read_label_map(config_model["LABEL_MAP_PATH"])
