@@ -1,5 +1,6 @@
 # BUILD
 # docker build -t aleobons/fastapi-object-detector:v1.0 .
+# docker run --rm -p 80:80 -v $(pwd)/configs:/configs -e config_api=/configs/config_api.json -e config_model=/configs/config_model.json -e config_output=/configs/config_output.json aleobons/fastapi-object-detector:v1.0
 
 FROM tensorflow/tensorflow:latest
 
